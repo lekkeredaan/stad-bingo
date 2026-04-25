@@ -99,7 +99,7 @@ const TASKS = {
     'Vraag een lokale politieagent om samen op de foto te gaan',
     'Fotografeer jezelf terwijl je in een fontein staat',
     'Vraag een voorbijganger om je een make-over te geven',
-    'Zing een liedje op een drukke plek in de stad en film het',
+    'Zing een liedje op een drukke plek in {stad} en film het',
     'Fotografeer jezelf terwijl je een straatkunstwerk nabootst',
     'Geef een wildvreemde een handmassage en neem het op',
     'Drink een glas vers gemolken melk met een koe op de achtergrond',
@@ -108,8 +108,8 @@ const TASKS = {
     'Doe 50 push-ups in het openbaar op film',
     'Bouw een zo hoog mogelijke toren van willekeurige spullen',
     'Koop een haring met uitjes op de markt en eet hem ter plekke op',
-    'Roep luid BINGO in een bibliotheek',
-    'Maak een ritje op een kinderfiets door de stad',
+    'Roep luid BINGO in een bibliotheek in {stad}',
+    'Maak een ritje op een kinderfiets door {stad}',
     'Loop op hakken een drogist binnen en vraag om blarenpleisters',
     'Zing een lied in de lift terwijl vreemden mee instappen',
     'Doe een bodyshot bij een teamgenoot',
@@ -117,32 +117,37 @@ const TASKS = {
     'Eet een Madame Jeanette peper en kauw er minimaal 10 seconden op',
     'Win van het andere team met armpje drukken',
     'Blaf naar een hond totdat je reactie krijgt',
-    'Ga op een yogamat yoga doen op een drukke plek totdat iemand reageert',
+    'Ga op een yogamat yoga doen op een drukke plek in {stad} totdat iemand reageert',
     'Vang een vis',
     'Bestel op een terras een biertje, zeg dat je een radler hebt besteld, zeg dan dat je een radler 2.0 hebt besteld',
     'Laat een tijdelijke tattoo op een gênante plek zetten',
+    'Vraag een voorbijganger om een grappig verhaal over {stad} te vertellen en neem het op',
+    'Loop als straatpredikant door het centrum van {stad} en film het',
+    'Maak een selfie bij het meest herkenbare punt van {stad}',
     // Stoer (50 punten-niveau)
     'Stop stiekem een briefje van €5 in de tas van een vreemde',
     'Hars het been van een teamgenoot',
     'Knoop grassprieten aan elkaar totdat het 2 meter lang is',
-    'Loop als straatpredikant door het stadscentrum',
-    'Was je haren met shampoo bij een openbare fontein',
+    'Was je haren met shampoo bij een openbare fontein in {stad}',
     'Laat de oudste van het team een tequila suicide doen en daarna Stevie Wonder zingen',
     'Doe een adje uit je eigen schoen',
-    'Laat een teamlid je haar in een belachelijke stijl knippen',
+    'Laat een bekende je haar in een belachelijke stijl knippen',
     'Lik de voet van een teamgenoot',
     'Maak met het hele team arm-in-arm een koprol',
-    'Eet iets eetbaars uit een rauwe, ongewassen groente die je van de grond pakt',
     'Vraag een vreemde of je hun voeten mag masseren',
     'Doe alsof je dronken bent en bel een willekeurig nummer in je telefoon',
     'Drink een shotje rum op een boot als een echte piraat',
+    'Breng bloemen naar de moeder van een teamgenoot',
+    'Laat een teamgenoot in een zo gek mogelijk outfit een fristi kopen bij de supermarkt',
+    'Laat een teamgenoot het Red Bull-schap aanvullen bij de Albert Heijn',
+    'Eet met het hele team een frikandel bij een lokale cafetaria of friettent',
     // Extreem (100 punten-niveau)
-    'Laat een vriend je haar in een belachelijke stijl knippen (geen pruik)',
     'Speel de kopbal van Robin van Persie na — het moet echt goed zijn',
     'Win een gratis drankje van een barman',
     'Eet een Madame Jeanette peper en slik hem door zonder te drinken',
     'Doe een bekende Jackass-stunt na op film',
-    'Organiseer een eetwedstrijd op straat met minimaal drie vreemden',
+    'Organiseer een eetwedstrijd bij een lokale cafetaria met minimaal drie vreemden',
+    'Haal een alcoholische versnapering voor de spelleiding van een cafetaria in {stad}',
   ],
   adults: [
     'Foto bij het oudste gebouw dat je vindt','Overtuig een vreemde voor spontaan gesprek 2 min',
@@ -184,11 +189,42 @@ const COLS = [
 
 // ── State ────────────────────────────────────────────────────────────────────
 
-let players = [];
-let gs      = null;   // game state
-let ti      = null;   // timer interval
-let pci     = -1;     // pending claim index
-let photos  = {};
+let players     = [];
+let gs          = null;   // game state
+let ti          = null;   // timer interval
+let pci         = -1;     // pending claim index
+let photos      = {};
+let currentCity = 'jouw stad';
+
+// ── GPS / stad detectie ───────────────────────────────────────────────────────
+
+async function fetchCityName(lat, lon) {
+  try {
+    const res  = await fetch(
+      `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=json&zoom=10`,
+      { headers: { 'Accept-Language': 'nl-NL,nl' } }
+    );
+    const data = await res.json();
+    return data.address?.city
+        || data.address?.town
+        || data.address?.village
+        || data.address?.municipality
+        || 'jouw stad';
+  } catch {
+    return 'jouw stad';
+  }
+}
+
+function detectCity() {
+  return new Promise(resolve => {
+    if (!navigator.geolocation) { resolve('jouw stad'); return; }
+    navigator.geolocation.getCurrentPosition(
+      async pos => resolve(await fetchCityName(pos.coords.latitude, pos.coords.longitude)),
+      ()        => resolve('jouw stad'),
+      { timeout: 6000 }
+    );
+  });
+}
 
 // ── Setup screen ─────────────────────────────────────────────────────────────
 
@@ -300,7 +336,7 @@ function shuffle(arr) {
 
 // ── Start game ────────────────────────────────────────────────────────────────
 
-function startGame() {
+async function startGame() {
   const mode = getMode();
   const sz   = Math.max(3, Math.min(7, +document.getElementById('gsz').value || 5));
   const fs   = document.getElementById('fsp').checked;
@@ -315,7 +351,16 @@ function startGame() {
   }
   document.getElementById('serr').style.display = 'none';
 
-  const items = shuffle(pool).slice(0, need);
+  // Detecteer stad voor locatie-bewuste opdrachten
+  const btn = document.querySelector('.bfull.bp');
+  btn.textContent = 'LOCATIE OPHALEN...';
+  btn.disabled    = true;
+  currentCity     = await detectCity();
+  btn.textContent = 'SPEL STARTEN';
+  btn.disabled    = false;
+
+  // Vervang {stad} placeholder met echte stad
+  const items = shuffle(pool).slice(0, need).map(t => t.replace(/\{stad\}/g, currentCity));
   const cells = [];
   let idx     = 0;
   const mid   = Math.floor(sz / 2);
