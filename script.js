@@ -1,11 +1,72 @@
-// ── Data ────────────────────────────────────────────────────────────────────
+// ── Firebase config ───────────────────────────────────────────────────────────
+// 👇 Vul hier de URL van jouw Firebase Realtime Database in
+const DB_URL = 'https://stad-bingo-default-rtdb.firebasedatabase.app';
+
+// Als DB_URL niet is ingesteld → lokale modus (geen Firebase vereist)
+const LOCAL_MODE = DB_URL.includes('YOUR-PROJECT');
+
+// ── Icon library ──────────────────────────────────────────────────────────────
+
+/* Mode card icons — amber line art, 36 × 36 */
+const ICONS = {
+  family: `<svg width="36" height="36" viewBox="0 0 36 36" fill="none" stroke="#e89520" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+    <circle cx="10" cy="9" r="3.5"/>
+    <path d="M4 27v-4a6 6 0 0 1 12 0v4"/>
+    <circle cx="26" cy="9" r="3.5"/>
+    <path d="M20 27v-4a6 6 0 0 1 12 0v4"/>
+    <circle cx="18" cy="15.5" r="2.8"/>
+    <path d="M13.5 27v-3a4.5 4.5 0 0 1 9 0v3"/>
+  </svg>`,
+
+  kids: `<svg width="36" height="36" viewBox="0 0 36 36" fill="none" stroke="#e89520" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+    <circle cx="18" cy="13.5" r="9.5"/>
+    <path d="M18 23v6"/>
+    <path d="M15 28.5q3 2.5 6 0"/>
+    <circle cx="14" cy="12.5" r="1.5" fill="#e89520" stroke="none"/>
+    <circle cx="22" cy="12.5" r="1.5" fill="#e89520" stroke="none"/>
+    <path d="M15.5 18q2.5 2 5 0"/>
+  </svg>`,
+
+  adult18: `<svg width="36" height="36" viewBox="0 0 36 36" fill="none" stroke="#e89520" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M12 5h12l-4 13h-4L12 5z"/>
+    <line x1="18" y1="18" x2="18" y2="28"/>
+    <path d="M13 28h10"/>
+    <circle cx="15.5" cy="11" r="1.3" fill="#e89520" stroke="none"/>
+    <circle cx="21" cy="8.5" r="1.1" fill="#e89520" stroke="none"/>
+    <circle cx="19.5" cy="15" r="1" fill="#e89520" stroke="none"/>
+  </svg>`,
+
+  adults: `<svg width="36" height="36" viewBox="0 0 36 36" fill="none" stroke="#e89520" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+    <rect x="2" y="19" width="7" height="13" rx="1.5"/>
+    <rect x="10" y="13" width="7" height="19" rx="1.5"/>
+    <rect x="18" y="7" width="9" height="25" rx="1.5"/>
+    <rect x="28" y="16" width="6" height="16" rx="1.5"/>
+    <path d="M1 32h34"/>
+    <path d="M22.5 4v3M20.5 5.5h4"/>
+  </svg>`,
+
+  custom: `<svg width="36" height="36" viewBox="0 0 36 36" fill="none" stroke="#e89520" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M24 5l7 7-18 18H6v-7L24 5z"/>
+    <path d="M20 9l7 7"/>
+    <path d="M6 25l5 5"/>
+    <path d="M3 33l3-7 4 4z" fill="#e89520"/>
+  </svg>`,
+};
+
+/* Inline button icons — inherits currentColor, used via innerHTML */
+const BTN = {
+  camera:  `<svg width="15" height="15" viewBox="0 0 15 15" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-right:5px;flex-shrink:0"><rect x="1" y="4.5" width="13" height="9" rx="2"/><circle cx="7.5" cy="9" r="2.3"/><path d="M5 4.5l1-2h3l1 2"/><circle cx="12" cy="6.8" r=".7" fill="currentColor" stroke="none"/></svg>`,
+  camSm:   `<svg width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"><rect x=".5" y="3" width="9" height="6.5" rx="1.5"/><circle cx="5" cy="6.2" r="1.6"/><path d="M3.2 3l.8-1.5h2l.8 1.5"/></svg>`,
+};
+
+// ── Data ──────────────────────────────────────────────────────────────────────
 
 const MODES = [
-  { id: 'family',  icon: '👨‍👩‍👧‍👦', name: 'Familie',     desc: 'Leuk voor alle leeftijden' },
-  { id: 'kids',    icon: '🎈',       name: 'Kids',        desc: 'Speciaal voor kinderen' },
-  { id: 'adult18', icon: '🍾',       name: '18+',         desc: 'Vrijgezellenfeest & teamuitjes' },
-  { id: 'adults',  icon: '🏙️',      name: 'Volwassenen', desc: 'Uitdagend, geen vieze content' },
-  { id: 'custom',  icon: '✏️',       name: 'Vrij',        desc: 'Eigen opdrachten invoeren' },
+  { id: 'family',  icon: ICONS.family,  name: 'Familie',     desc: 'Leuk voor alle leeftijden' },
+  { id: 'kids',    icon: ICONS.kids,    name: 'Kids',        desc: 'Speciaal voor kinderen' },
+  { id: 'adult18', icon: ICONS.adult18, name: '18+',         desc: 'Vrijgezellenfeest & teamuitjes' },
+  { id: 'adults',  icon: ICONS.adults,  name: 'Volwassenen', desc: 'Uitdagend, geen vieze content' },
+  { id: 'custom',  icon: ICONS.custom,  name: 'Vrij',        desc: 'Eigen opdrachten invoeren' },
 ];
 
 const TASKS = {
@@ -47,7 +108,7 @@ const TASKS = {
     'Maak een schaduwfiguur','Vind iets glimmends','Foto van iets heel groots','Vind iets met een grappige vorm',
   ],
   adult18: [
-    // Makkelijk (5 punten-niveau)
+    // Makkelijk
     'Maak een foto terwijl je een vreemde knuffelt',
     'Maak een foto van jezelf terwijl je in een winkelwagentje zit',
     'Vraag een voorbijganger om een mop te vertellen en neem het op',
@@ -68,7 +129,7 @@ const TASKS = {
     'Klim op een klimrek en maak een foto',
     'Verzamel 10 grassprieten en leg ze van groot naar klein',
     'Aai een kat en maak een foto',
-    // Gemiddeld (10 punten-niveau)
+    // Gemiddeld
     'Laat een vreemde een gezicht op je hand tekenen',
     'Organiseer een mini-danswedstrijd op straat',
     'Maak een foto terwijl je een vreemde helpt met boodschappen dragen',
@@ -95,7 +156,7 @@ const TASKS = {
     'Spot een driewieler en maak een foto',
     'Ruil een briefje van €10 in voor losse munten',
     'Peuter in je neus en eet het op',
-    // Uitdagend (25 punten-niveau)
+    // Uitdagend
     'Vraag een lokale politieagent om samen op de foto te gaan',
     'Fotografeer jezelf terwijl je in een fontein staat',
     'Vraag een voorbijganger om je een make-over te geven',
@@ -124,7 +185,7 @@ const TASKS = {
     'Vraag een voorbijganger om een grappig verhaal over {stad} te vertellen en neem het op',
     'Loop als straatpredikant door het centrum van {stad} en film het',
     'Maak een selfie bij het meest herkenbare punt van {stad}',
-    // Stoer (50 punten-niveau)
+    // Stoer
     'Stop stiekem een briefje van €5 in de tas van een vreemde',
     'Hars het been van een teamgenoot',
     'Knoop grassprieten aan elkaar totdat het 2 meter lang is',
@@ -141,7 +202,7 @@ const TASKS = {
     'Laat een teamgenoot in een zo gek mogelijk outfit een fristi kopen bij de supermarkt',
     'Laat een teamgenoot het Red Bull-schap aanvullen bij de Albert Heijn',
     'Eet met het hele team een frikandel bij een lokale cafetaria of friettent',
-    // Extreem (100 punten-niveau)
+    // Extreem
     'Speel de kopbal van Robin van Persie na — het moet echt goed zijn',
     'Win een gratis drankje van een barman',
     'Eet een Madame Jeanette peper en slik hem door zonder te drinken',
@@ -187,16 +248,112 @@ const COLS = [
   { m: '#ff6688', b: '#330015', l: '#ffaabb' },
 ];
 
-// ── State ────────────────────────────────────────────────────────────────────
+// ── State ─────────────────────────────────────────────────────────────────────
 
-let players     = [];
-let gs          = null;   // game state
-let ti          = null;   // timer interval
-let pci         = -1;     // pending claim index
-let photos      = {};
+let players        = [];
+let gs             = null;
+let ti             = null;
+let pci            = -1;
+let pendingTeamIdx = -1;
+let photos         = {};
 let currentCity = 'jouw stad';
+let gameCode    = null;
+let isHost      = false;
+let gameStream  = null;
 
-// ── GPS / stad detectie ───────────────────────────────────────────────────────
+// ── Scherm navigatie ──────────────────────────────────────────────────────────
+
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+
+function showHome() {
+  stopListening();
+  clearInterval(ti);
+  gs       = null;
+  pci      = -1;
+  photos   = {};
+  gameCode = null;
+  isHost   = false;
+  document.getElementById('wov').classList.remove('show');
+  document.getElementById('gal').style.display = 'none';
+
+  // Verberg de join-knop als Firebase niet is ingesteld
+  const joinBtn = document.querySelector('#home .btn.bg2');
+  if (joinBtn) joinBtn.style.display = LOCAL_MODE ? 'none' : '';
+
+  showScreen('home');
+}
+
+function showSetup() {
+  players = [{ name: 'Team 1', color: 0 }, { name: 'Team 2', color: 1 }];
+  initSetup();
+  showScreen('setup');
+}
+
+function showJoinScreen() {
+  if (LOCAL_MODE) {
+    alert('Meedoen via code vereist Firebase Realtime Database.\nVul je DB_URL in bovenaan script.js om multiplayer te activeren.');
+    return;
+  }
+  document.getElementById('joinCode').value             = '';
+  document.getElementById('joinDetails').style.display  = 'none';
+  document.getElementById('joinErr').style.display      = 'none';
+  document.getElementById('joinSearchBtn').textContent  = 'ZOEKEN';
+  showScreen('join');
+}
+
+// ── Code generator ────────────────────────────────────────────────────────────
+
+function generateCode() {
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  return Array.from({ length: 6 }, () => chars[Math.floor(Math.random() * chars.length)]).join('');
+}
+
+// ── Firebase REST API ─────────────────────────────────────────────────────────
+
+async function fbSet(code, data) {
+  await fetch(`${DB_URL}/games/${code}.json`, {
+    method:  'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body:    JSON.stringify(data),
+  });
+}
+
+async function fbPatch(code, data) {
+  await fetch(`${DB_URL}/games/${code}.json`, {
+    method:  'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body:    JSON.stringify(data),
+  });
+}
+
+async function fbGet(code) {
+  try {
+    const r = await fetch(`${DB_URL}/games/${code}.json`);
+    return r.json();
+  } catch { return null; }
+}
+
+function fbListen(code, cb) {
+  stopListening();
+  gameStream = new EventSource(`${DB_URL}/games/${code}.json`);
+  gameStream.addEventListener('put', async e => {
+    try {
+      const d = JSON.parse(e.data);
+      if (d.path === '/' && d.data)   { cb(d.data); return; }
+      if (d.path !== '/' && d.data !== null) { const full = await fbGet(code); if (full) cb(full); }
+    } catch {}
+  });
+  gameStream.onerror = () => {};
+}
+
+function stopListening() {
+  if (gameStream) { gameStream.close(); gameStream = null; }
+}
+
+// ── GPS detectie ──────────────────────────────────────────────────────────────
 
 async function fetchCityName(lat, lon) {
   try {
@@ -226,10 +383,9 @@ function detectCity() {
   });
 }
 
-// ── Setup screen ─────────────────────────────────────────────────────────────
+// ── Setup scherm ──────────────────────────────────────────────────────────────
 
 function initSetup() {
-  // Mode grid
   const mg = document.getElementById('mgrid');
   mg.innerHTML = MODES.map((m, i) =>
     `<div class="mc${i === 0 ? ' sel' : ''}" data-id="${m.id}" onclick="selMode('${m.id}')">
@@ -239,23 +395,17 @@ function initSetup() {
      </div>`
   ).join('');
 
-  // Default players
-  players = [{ name: 'Speler 1', color: 0 }, { name: 'Speler 2', color: 1 }];
   renderPlayers();
 
-  // Board-size live label
   document.getElementById('gsz').oninput = e => {
     document.getElementById('glbl').textContent = e.target.value;
     updateCustomCount();
   };
-
-  // Timer custom input toggle
   document.getElementById('tsel').onchange = e => {
-    const custom = e.target.value === 'c';
-    document.getElementById('tcust').style.display = custom ? 'block' : 'none';
-    document.getElementById('tcl').style.display   = custom ? 'block' : 'none';
+    const c = e.target.value === 'c';
+    document.getElementById('tcust').style.display = c ? 'block' : 'none';
+    document.getElementById('tcl').style.display   = c ? 'block' : 'none';
   };
-
   document.getElementById('citems').oninput = updateCustomCount;
   updateCustomCount();
 }
@@ -281,7 +431,7 @@ function renderPlayers() {
          ).join('')}
        </select>
        ${players.length > 2
-         ? `<button class="btn br" style="padding:4px 9px;font-size:10px" onclick="removePlayer(${i})">✕</button>`
+         ? `<button class="btn br" style="padding:4px 9px;font-size:10px;line-height:1" onclick="removePlayer(${i})"><svg width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M2 2l6 6M8 2l-6 6"/></svg></button>`
          : ''}
      </div>`
   ).join('');
@@ -291,7 +441,7 @@ function addPlayer() {
   if (players.length >= 6) return;
   const used = players.map(p => p.color);
   const next = COLS.findIndex((_, i) => !used.includes(i));
-  players.push({ name: `Speler ${players.length + 1}`, color: next >= 0 ? next : 0 });
+  players.push({ name: `Team ${players.length + 1}`, color: next >= 0 ? next : 0 });
   renderPlayers();
 }
 
@@ -308,10 +458,10 @@ function getCustomItems() {
 
 function updateCustomCount() {
   if (getMode() !== 'custom') return;
-  const sz    = +document.getElementById('gsz').value || 5;
-  const need  = sz * sz - (document.getElementById('fsp').checked ? 1 : 0);
-  const have  = getCustomItems().length;
-  const el    = document.getElementById('ccnt');
+  const sz   = +document.getElementById('gsz').value || 5;
+  const need = sz * sz - (document.getElementById('fsp').checked ? 1 : 0);
+  const have = getCustomItems().length;
+  const el   = document.getElementById('ccnt');
   el.style.color = have >= need ? '#4a9970' : '#c05050';
   el.textContent = `${have} opdrachten — ${need} nodig`;
 }
@@ -334,9 +484,9 @@ function shuffle(arr) {
   return r;
 }
 
-// ── Start game ────────────────────────────────────────────────────────────────
+// ── Spel aanmaken (host) ──────────────────────────────────────────────────────
 
-async function startGame() {
+async function createGame() {
   const mode = getMode();
   const sz   = Math.max(3, Math.min(7, +document.getElementById('gsz').value || 5));
   const fs   = document.getElementById('fsp').checked;
@@ -351,15 +501,13 @@ async function startGame() {
   }
   document.getElementById('serr').style.display = 'none';
 
-  // Detecteer stad voor locatie-bewuste opdrachten
-  const btn = document.querySelector('.bfull.bp');
+  const btn = document.querySelector('[onclick="createGame()"]');
   btn.textContent = 'LOCATIE OPHALEN...';
   btn.disabled    = true;
   currentCity     = await detectCity();
-  btn.textContent = 'SPEL STARTEN';
+  btn.textContent = 'SPEL AANMAKEN';
   btn.disabled    = false;
 
-  // Vervang {stad} placeholder met echte stad
   const items = shuffle(pool).slice(0, need).map(t => t.replace(/\{stad\}/g, currentCity));
   const cells = [];
   let idx     = 0;
@@ -367,33 +515,224 @@ async function startGame() {
 
   for (let r = 0; r < sz; r++) {
     for (let c = 0; c < sz; c++) {
-      if (fs && r === mid && c === mid) {
-        cells.push({ text: 'VRIJ', free: true,  claimed: 0, photo: null, wc: false });
-      } else {
-        cells.push({ text: items[idx++], free: false, claimed: 0, photo: null, wc: false });
-      }
+      if (fs && r === mid && c === mid) cells.push({ text: 'VRIJ', free: true,  claimed: 0, wc: false });
+      else                              cells.push({ text: items[idx++], free: false, claimed: 0, wc: false });
     }
   }
 
   const tm = getTimerMinutes();
-  gs = {
-    mode,
-    sz,
+
+  // ── Lokale modus (geen Firebase) ──────────────────────────────────────────
+  if (LOCAL_MODE) {
+    photos   = {};
+    gameCode = null;
+    isHost   = false;
+    gs = {
+      mode, sz,
+      cells:   cells.map(c => ({ ...c, photo: null })),
+      players: players.map(p => ({ name: p.name, color: p.color, score: 0, members: [] })),
+      turn: 0, over: false,
+      tm, ts: tm * 60,
+      tstart: tm > 0 ? Date.now() : null,
+    };
+    document.getElementById('gal').style.display = 'none';
+    showScreen('game');
+    if (tm > 0 && gs.tstart) startTimer();
+    renderGame();
+    return;
+  }
+
+  // ── Multiplayer via Firebase ───────────────────────────────────────────────
+  gameCode = generateCode();
+  isHost   = true;
+
+  await fbSet(gameCode, {
+    mode, sz, tm,
+    status:    'lobby',
+    over:      false,
+    turn:      0,
+    tstart:    0,
     cells,
-    players: players.map(p => ({ ...p, score: 0 })),
-    turn: 0,
-    over: false,
-    tm,
-    ts:     tm * 60,
-    tstart: tm > 0 ? Date.now() : null,
-  };
-  photos = {};
+    teams:     players.map(p => ({ name: p.name, color: p.color, score: 0, members: [] })),
+    winner:    -1,
+    winReason: '',
+  });
 
-  document.getElementById('setup').classList.remove('active');
-  document.getElementById('game').classList.add('active');
+  document.getElementById('waitCode').textContent      = gameCode;
+  document.getElementById('waitSub').textContent       = 'Deel deze code met andere spelers';
+  document.getElementById('waitStartBtn').style.display = 'block';
+  renderWaitPlayers(players.map(p => ({ ...p, members: [] })));
+  showScreen('wait');
+  fbListen(gameCode, onGameData);
+}
 
-  if (tm > 0) startTimer();
-  renderGame();
+// ── Joinen ────────────────────────────────────────────────────────────────────
+
+async function searchGame() {
+  const code = document.getElementById('joinCode').value.toUpperCase().replace(/[^A-Z0-9]/g, '');
+  document.getElementById('joinErr').style.display = 'none';
+
+  if (code.length !== 6) { showJoinErr('Voer een geldige 6-cijferige code in'); return; }
+
+  document.getElementById('joinSearchBtn').textContent = 'ZOEKEN...';
+  const data = await fbGet(code);
+  document.getElementById('joinSearchBtn').textContent = 'OPNIEUW ZOEKEN';
+
+  if (!data)                    { showJoinErr('Spel niet gevonden. Controleer de code.'); return; }
+  if (data.status === 'playing'){ showJoinErr('Dit spel is al begonnen.'); return; }
+  if (data.status === 'over')   { showJoinErr('Dit spel is afgelopen.'); return; }
+
+  gameCode = code;
+  renderJoinTeams(data.teams);
+  document.getElementById('joinDetails').style.display = 'block';
+}
+
+function renderJoinTeams(teams) {
+  document.getElementById('joinTeamList').dataset.sel = '';
+  document.getElementById('joinTeamList').innerHTML   = teams.map((t, i) => {
+    const c       = COLS[t.color];
+    const members = (t.members || []).join(', ') || 'Nog niemand';
+    return `<div class="join-team" data-idx="${i}"
+               style="border-color:${c.m};background:${c.b}"
+               onclick="selectJoinTeam(this, ${i})">
+              <div class="cd" style="background:${c.m};width:12px;height:12px;flex-shrink:0"></div>
+              <div style="flex:1">
+                <div style="color:${c.l};font-weight:600;font-size:14px">${t.name}</div>
+                <div style="font-size:11px;color:var(--muted);margin-top:2px">${members}</div>
+              </div>
+            </div>`;
+  }).join('');
+}
+
+function selectJoinTeam(el, i) {
+  document.querySelectorAll('.join-team').forEach(e => e.classList.remove('sel-team'));
+  el.classList.add('sel-team');
+  document.getElementById('joinTeamList').dataset.sel = i;
+}
+
+async function confirmJoin() {
+  const name    = document.getElementById('joinName').value.trim();
+  const selRaw  = document.getElementById('joinTeamList').dataset.sel;
+  const teamIdx = selRaw !== '' ? +selRaw : -1;
+
+  if (!name)       { showJoinErr('Vul je naam in'); return; }
+  if (teamIdx < 0) { showJoinErr('Kies een team'); return; }
+
+  const data = await fbGet(gameCode);
+  if (!data) { showJoinErr('Verbindingsfout. Probeer opnieuw.'); return; }
+
+  const teams = data.teams.map((t, i) =>
+    i === teamIdx ? { ...t, members: [...(t.members || []), name] } : t
+  );
+  await fbPatch(gameCode, { teams });
+
+  isHost = false;
+  document.getElementById('waitCode').textContent       = gameCode;
+  document.getElementById('waitSub').textContent        = 'Wachten tot de host het spel start...';
+  document.getElementById('waitStartBtn').style.display = 'none';
+  renderWaitPlayers(teams);
+  showScreen('wait');
+  fbListen(gameCode, onGameData);
+}
+
+function showJoinErr(msg) {
+  const el = document.getElementById('joinErr');
+  el.textContent   = msg;
+  el.style.display = 'block';
+}
+
+// ── Wait scherm (lobby) ───────────────────────────────────────────────────────
+
+function renderWaitPlayers(teams) {
+  document.getElementById('waitPlayers').innerHTML = teams.map(t => {
+    const c       = COLS[t.color];
+    const members = (t.members || []).join(', ') || 'Nog niemand gejoint';
+    return `<div class="pr" style="border-color:${c.m}55">
+              <div class="cd" style="background:${c.m}"></div>
+              <div>
+                <div style="font-weight:600;color:${c.l};font-size:14px">${t.name}</div>
+                <div style="font-size:12px;color:var(--muted)">${members}</div>
+              </div>
+            </div>`;
+  }).join('');
+}
+
+async function hostStartGame() {
+  if (!isHost || !gameCode) return;
+  const btn = document.getElementById('waitStartBtn');
+  btn.textContent = 'STARTEN...';
+  btn.disabled    = true;
+  await fbPatch(gameCode, { status: 'playing', tstart: Date.now() });
+  btn.textContent = 'SPEL STARTEN';
+  btn.disabled    = false;
+}
+
+function leaveWait() {
+  stopListening();
+  showHome();
+}
+
+// ── Firebase data handler ─────────────────────────────────────────────────────
+
+function onGameData(data) {
+  if (!data) return;
+  const screen = document.querySelector('.screen.active')?.id;
+
+  if (data.status === 'lobby') {
+    if (screen === 'wait') renderWaitPlayers(data.teams);
+    return;
+  }
+
+  if (data.status === 'playing' || data.status === 'over') {
+    if (screen === 'wait') {
+      // Eerste keer: initialiseer gs en ga naar game scherm
+      photos = {};
+      const tm = data.tm || 0;
+      gs = {
+        mode:    data.mode,
+        sz:      data.sz,
+        cells:   data.cells.map(c => ({ ...c, photo: null })),
+        players: data.teams,
+        turn:    data.turn,
+        over:    data.over || data.status === 'over',
+        tm,
+        ts:      tm * 60,
+        tstart:  data.tstart || null,
+      };
+      showScreen('game');
+      if (tm > 0 && gs.tstart) startTimer();
+      renderGame();
+
+    } else if (screen === 'game' && gs) {
+      const wasOver = gs.over;
+      gs.cells   = data.cells.map((c, i) => ({ ...c, photo: gs.cells[i]?.photo || null }));
+      gs.players = data.teams;
+      gs.turn    = data.turn;
+      gs.over    = data.over || data.status === 'over';
+      renderGame();
+
+      if (!wasOver && gs.over) {
+        clearInterval(ti);
+        if (data.winner >= 0) showWinner(data.winner, data.winReason);
+        else showTie(data.winReason);
+      }
+    }
+  }
+}
+
+// ── Game state sync naar Firebase ─────────────────────────────────────────────
+
+async function syncGameState(opts = {}) {
+  if (!gameCode) return;
+  await fbPatch(gameCode, {
+    cells:     gs.cells.map(c => ({ text: c.text, free: c.free, claimed: c.claimed, wc: c.wc })),
+    teams:     gs.players.map(p => ({ name: p.name, color: p.color, score: p.score, members: p.members || [] })),
+    turn:      gs.turn,
+    over:      gs.over,
+    status:    gs.over ? 'over' : 'playing',
+    winner:    opts.winner !== undefined ? opts.winner : -1,
+    winReason: opts.winReason || '',
+  });
 }
 
 // ── Timer ─────────────────────────────────────────────────────────────────────
@@ -414,8 +753,8 @@ function updateTimerDisplay(rem, tot) {
   const tf = document.getElementById('tfill');
   const m  = Math.floor(rem / 60);
   const s  = rem % 60;
-  el.textContent = `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
-  el.style.color = rem < 60 ? '#ff4444' : rem < tot * .25 ? '#ffaa00' : 'var(--txt)';
+  el.textContent      = `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+  el.style.color      = rem < 60 ? '#ff4444' : rem < tot * .25 ? '#ffaa00' : 'var(--txt)';
   tf.style.width      = `${Math.round(rem / tot * 100)}%`;
   tf.style.background = rem < 60 ? '#ff4444' : rem < tot * .25 ? '#ffaa00' : 'var(--acc)';
   document.getElementById('tlbl').textContent = `${Math.ceil(rem / 60)} min over`;
@@ -424,11 +763,15 @@ function updateTimerDisplay(rem, tot) {
 function timeUp() {
   gs.over = true;
   renderGame();
-  const max = Math.max(...gs.players.map(p => p.score));
+  const max     = Math.max(...gs.players.map(p => p.score));
   const winners = gs.players.map((p, i) => ({ ...p, i })).filter(p => p.score === max);
-  winners.length === 1
-    ? showWinner(winners[0].i, 'Tijd is om! Meeste vakjes wint.')
-    : showTie('Tijd is om — gelijkspel!');
+  if (winners.length === 1) {
+    showWinner(winners[0].i, 'Tijd is om! Meeste vakjes wint.');
+    syncGameState({ winner: winners[0].i, winReason: 'Tijd is om! Meeste vakjes wint.' });
+  } else {
+    showTie('Tijd is om — gelijkspel!');
+    syncGameState({ winner: -1, winReason: 'Tijd is om — gelijkspel!' });
+  }
 }
 
 // ── Render game ───────────────────────────────────────────────────────────────
@@ -439,28 +782,20 @@ function renderGame() {
 
   if (gs.tm > 0) document.getElementById('tbar').style.display = 'flex';
 
-  // Player chips
-  document.getElementById('pchips').innerHTML = gs.players.map((p, i) => {
-    const c   = COLS[p.color];
-    const act = !gs.over && gs.turn === i;
-    return `<div class="chip${act ? ' act' : ''}" style="background:${c.b};border-color:${c.m};color:${c.l}">
-              ${act ? '▶ ' : ''}${p.name}<span class="cs">${p.score}</span>
+  document.getElementById('pchips').innerHTML = gs.players.map((p) => {
+    const c = COLS[p.color];
+    return `<div class="chip" style="background:${c.b};border-color:${c.m};color:${c.l}">
+              ${p.name}<span class="cs">${p.score}</span>
             </div>`;
   }).join('');
 
-  // Turn label
-  const tl = document.getElementById('turnl');
-  if (!gs.over) {
-    const cur = gs.players[gs.turn];
-    tl.innerHTML = `<span style="color:${COLS[cur.color].m}">${cur.name}</span> — kies een opdracht`;
-  } else {
-    tl.innerHTML = '';
-  }
+  document.getElementById('turnl').innerHTML = '';
 
-  // Board
-  const board = document.getElementById('board');
-  const sz    = gs.sz;
-  const cp    = Math.max(52, Math.min(86, Math.floor(550 / sz)));
+  const board     = document.getElementById('board');
+  const sz        = gs.sz;
+  const available = Math.min(window.innerWidth, 480) - 24; // phone-first: max 480px app width, 12px padding each side
+  const gaps      = (sz - 1) * 4;
+  const cp        = Math.max(44, Math.min(86, Math.floor((available - gaps) / sz)));
   board.style.gridTemplateColumns = `repeat(${sz}, ${cp}px)`;
 
   board.innerHTML = gs.cells.map((cell, i) => {
@@ -475,15 +810,14 @@ function renderGame() {
     }
 
     const ownerName = cell.claimed ? gs.players[cell.claimed - 1].name : '';
-    const photoIcon = cell.photo ? '<span class="pb">📷</span>' : '';
+    const photoIcon = cell.photo ? `<span class="pb" style="color:var(--acc)">${BTN.camSm}</span>` : '';
     const wc        = cell.wc ? ' wc' : '';
     const fs        = Math.max(9, Math.min(11, Math.floor(cp / 8)));
 
     return `<div class="cell${cell.claimed ? ' cl' : ''}${wc}"
                style="width:${cp}px;height:${cp}px;background:${bg};border-color:${bc};color:${tc};font-size:${fs}px"
                onclick="clickCell(${i})">
-              ${photoIcon}
-              ${cell.text}
+              ${photoIcon}${cell.text}
               ${ownerName
                 ? `<div class="ow" style="color:${COLS[gs.players[cell.claimed - 1].color].m}">${ownerName.substring(0, 8)}</div>`
                 : ''}
@@ -500,21 +834,60 @@ function clickCell(i) {
   const cell = gs.cells[i];
   if (cell.free || cell.claimed) return;
 
-  pci = i;
-  const cur = gs.players[gs.turn];
-  document.getElementById('ptxt').textContent         = cell.text;
-  document.getElementById('pins').textContent         = `${cur.name}: maak een foto als bewijs!`;
-  document.getElementById('pprev').style.display      = 'none';
-  document.getElementById('pprev').src                = '';
-  document.getElementById('pconf').style.display      = 'none';
-  document.getElementById('pshoot').textContent       = '📷 Foto kiezen';
-  document.getElementById('pfile').value              = '';
+  pci            = i;
+  pendingTeamIdx = -1;
+
+  document.getElementById('ptxt').textContent    = cell.text;
+  document.getElementById('pprev').style.display = 'none';
+  document.getElementById('pprev').src           = '';
+  document.getElementById('pconf').style.display = 'none';
+  document.getElementById('pshoot').style.display = 'none';
+  document.getElementById('pfile').value         = '';
+
+  // Team selector — anyone can claim, no turn order
+  document.getElementById('pins').innerHTML =
+    `<div style="margin-bottom:10px;font-size:12px;color:var(--muted);font-family:'Orbitron',monospace;letter-spacing:0.08em">WIE CLAIMT DIT?</div>` +
+    `<div style="display:flex;flex-wrap:wrap;gap:8px;justify-content:center">` +
+    gs.players.map((p, idx) => {
+      const c = COLS[p.color];
+      return `<button class="btn team-sel-btn" data-idx="${idx}"
+                 style="background:${c.b};border:2px solid ${c.m};color:${c.l};padding:7px 16px;font-family:'DM Sans',sans-serif;font-size:13px;font-weight:600;letter-spacing:0"
+                 onclick="selectClaimTeam(${idx})">${p.name}</button>`;
+    }).join('') +
+    `</div>`;
+
   document.getElementById('pmod').classList.add('show');
+}
+
+function selectClaimTeam(idx) {
+  pendingTeamIdx = idx;
+  const p = gs.players[idx];
+  const c = COLS[p.color];
+
+  // Visually highlight selected team button
+  document.querySelectorAll('.team-sel-btn').forEach(btn => {
+    const selected = +btn.dataset.idx === idx;
+    btn.style.opacity   = selected ? '1' : '0.4';
+    btn.style.transform = selected ? 'scale(1.06)' : 'scale(1)';
+  });
+
+  // Show instruction + photo button
+  const existing = document.getElementById('pins').querySelector('.claim-instr');
+  if (existing) existing.remove();
+  const instr = document.createElement('div');
+  instr.className = 'claim-instr';
+  instr.style.cssText = 'margin-top:10px;font-size:12px;color:var(--muted)';
+  instr.textContent   = `${p.name}: maak een foto als bewijs!`;
+  document.getElementById('pins').appendChild(instr);
+
+  document.getElementById('pshoot').style.display = 'inline-block';
+  document.getElementById('pshoot').innerHTML = BTN.camera + 'Foto kiezen';
 }
 
 function closeClaimModal() {
   document.getElementById('pmod').classList.remove('show');
-  pci = -1;
+  pci            = -1;
+  pendingTeamIdx = -1;
 }
 
 document.getElementById('pfile').addEventListener('change', function () {
@@ -522,20 +895,28 @@ document.getElementById('pfile').addEventListener('change', function () {
   const reader = new FileReader();
   reader.onload = e => {
     const prev = document.getElementById('pprev');
-    prev.src             = e.target.result;
-    prev.style.display   = 'block';
-    document.getElementById('pconf').style.display  = 'inline-block';
-    document.getElementById('pshoot').textContent   = '📷 Andere foto';
+    prev.src                                       = e.target.result;
+    prev.style.display                             = 'block';
+    document.getElementById('pconf').style.display = 'inline-block';
+    document.getElementById('pshoot').innerHTML = BTN.camera + 'Andere foto';
   };
   reader.readAsDataURL(this.files[0]);
 });
 
-function confirmClaim() {
+async function confirmClaim() {
   const i = pci;
-  if (i < 0) return;
+  if (i < 0 || pendingTeamIdx < 0) {
+    // No team selected — shake the team buttons as a hint
+    document.querySelectorAll('.team-sel-btn').forEach(btn => {
+      btn.style.animation = 'none';
+      btn.offsetHeight; // reflow
+      btn.style.animation = 'shake .35s ease';
+    });
+    return;
+  }
 
   const cell   = gs.cells[i];
-  const pi     = gs.turn;
+  const pi     = pendingTeamIdx;
   const pn     = pi + 1;
   const player = gs.players[pi];
 
@@ -543,14 +924,13 @@ function confirmClaim() {
   player.score++;
 
   const photoData = document.getElementById('pprev').src;
-  if (photoData && photoData.startsWith('data:')) {
-    cell.photo  = photoData;
-    photos[i]   = { photo: photoData, task: cell.text, player: player.name, color: COLS[player.color].m };
+  if (photoData?.startsWith('data:')) {
+    cell.photo = photoData;
+    photos[i]  = { photo: photoData, task: cell.text, player: player.name, color: COLS[player.color].m };
   }
 
   closeClaimModal();
 
-  // Check bingo
   const winLine = checkBingo(pn);
   if (winLine) {
     gs.over = true;
@@ -558,36 +938,39 @@ function confirmClaim() {
     clearInterval(ti);
     renderGame();
     showWinner(pi, 'Rij voltooid!');
+    await syncGameState({ winner: pi, winReason: 'Rij voltooid!' });
     return;
   }
 
-  // Check board full
   if (gs.cells.filter(c => !c.free && !c.claimed).length === 0) {
     gs.over = true;
     clearInterval(ti);
     renderGame();
-    const max     = Math.max(...gs.players.map(p => p.score));
-    const winners = gs.players.map((p, x) => ({ ...p, i: x })).filter(p => p.score === max);
-    winners.length === 1 ? showWinner(winners[0].i, 'Meeste vakjes!') : showTie('Gelijkspel!');
+    const max = Math.max(...gs.players.map(p => p.score));
+    const ws  = gs.players.map((p, x) => ({ ...p, i: x })).filter(p => p.score === max);
+    const wi  = ws.length === 1 ? ws[0].i : -1;
+    const wr  = ws.length === 1 ? 'Meeste vakjes!' : 'Gelijkspel!';
+    if (wi >= 0) showWinner(wi, wr); else showTie(wr);
+    await syncGameState({ winner: wi, winReason: wr });
     return;
   }
 
-  gs.turn = (gs.turn + 1) % gs.players.length;
   renderGame();
+  await syncGameState();
 }
 
 function checkBingo(pn) {
-  const sz  = gs.sz;
-  const c   = gs.cells;
-  const ok  = i => c[i].claimed === pn || c[i].free;
+  const sz = gs.sz;
+  const c  = gs.cells;
+  const ok = i => c[i].claimed === pn || c[i].free;
 
   for (let r = 0; r < sz; r++) {
     const row = [...Array(sz)].map((_, i) => r * sz + i);
     if (row.every(ok)) return row;
   }
   for (let col = 0; col < sz; col++) {
-    const column = [...Array(sz)].map((_, i) => i * sz + col);
-    if (column.every(ok)) return column;
+    const col2 = [...Array(sz)].map((_, i) => i * sz + col);
+    if (col2.every(ok)) return col2;
   }
   const d1 = [...Array(sz)].map((_, i) => i * sz + i);
   if (d1.every(ok)) return d1;
@@ -596,17 +979,15 @@ function checkBingo(pn) {
   return null;
 }
 
-// ── Win / tie overlays ────────────────────────────────────────────────────────
+// ── Win / tie ─────────────────────────────────────────────────────────────────
 
 function showWinner(pi, reason) {
   clearInterval(ti);
   const p = gs.players[pi];
   const c = COLS[p.color];
-
   document.getElementById('wtitle').textContent  = p.name + ' wint!';
   document.getElementById('wtitle').style.color  = c.m;
   document.getElementById('wreason').textContent = reason;
-
   const sorted = [...gs.players.map((pl, i) => ({ ...pl, i }))].sort((a, b) => b.score - a.score);
   document.getElementById('pod').innerHTML = sorted.map(pl =>
     `<div class="pe">
@@ -614,7 +995,6 @@ function showWinner(pi, reason) {
        <div class="pn">${pl.name}</div>
      </div>`
   ).join('');
-
   document.getElementById('wov').classList.add('show');
 }
 
@@ -623,7 +1003,6 @@ function showTie(msg) {
   document.getElementById('wtitle').textContent  = 'Gelijkspel!';
   document.getElementById('wtitle').style.color  = '#ffcc00';
   document.getElementById('wreason').textContent = msg || '';
-
   const sorted = [...gs.players.map((pl, i) => ({ ...pl, i }))].sort((a, b) => b.score - a.score);
   document.getElementById('pod').innerHTML = sorted.map(pl =>
     `<div class="pe">
@@ -631,7 +1010,6 @@ function showTie(msg) {
        <div class="pn">${pl.name}</div>
      </div>`
   ).join('');
-
   document.getElementById('wov').classList.add('show');
 }
 
@@ -662,17 +1040,15 @@ function renderGallery() {
 // ── Reset ─────────────────────────────────────────────────────────────────────
 
 function resetGame() {
+  stopListening();
   clearInterval(ti);
-  gs   = null;
-  pci  = -1;
+  gs     = null;
+  pci    = -1;
   photos = {};
   document.getElementById('wov').classList.remove('show');
-  document.getElementById('game').classList.remove('active');
   document.getElementById('gal').style.display = 'none';
-  document.getElementById('setup').classList.add('active');
-  renderPlayers();
-  updateCustomCount();
+  showHome();
 }
 
 // ── Boot ──────────────────────────────────────────────────────────────────────
-initSetup();
+showHome();
