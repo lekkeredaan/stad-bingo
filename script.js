@@ -314,11 +314,12 @@ function generateCode() {
 // ── Firebase REST API ─────────────────────────────────────────────────────────
 
 async function fbSet(code, data) {
-  await fetch(`${DB_URL}/games/${code}.json`, {
+  const res = await fetch(`${DB_URL}/games/${code}.json`, {
     method:  'PUT',
     headers: { 'Content-Type': 'application/json' },
     body:    JSON.stringify(data),
   });
+  if (!res.ok) throw new Error(`Firebase fout: ${res.status} ${res.statusText}`);
 }
 
 async function fbPatch(code, data) {
@@ -375,10 +376,15 @@ async function fetchCityName(lat, lon) {
 function detectCity() {
   return new Promise(resolve => {
     if (!navigator.geolocation) { resolve('jouw stad'); return; }
+    // Resolve immediately with fallback after 4 s (don't block game creation)
+    const fallback = setTimeout(() => resolve('jouw stad'), 4000);
     navigator.geolocation.getCurrentPosition(
-      async pos => resolve(await fetchCityName(pos.coords.latitude, pos.coords.longitude)),
-      ()        => resolve('jouw stad'),
-      { timeout: 6000 }
+      async pos => {
+        clearTimeout(fallback);
+        resolve(await fetchCityName(pos.coords.latitude, pos.coords.longitude));
+      },
+      () => { clearTimeout(fallback); resolve('jouw stad'); },
+      { timeout: 4000, maximumAge: 60000 }
     );
   });
 }
@@ -502,10 +508,11 @@ async function createGame() {
   document.getElementById('serr').style.display = 'none';
 
   const btn = document.querySelector('[onclick="createGame()"]');
+  const btnOrig = btn.innerHTML;
   btn.textContent = 'LOCATIE OPHALEN...';
   btn.disabled    = true;
   currentCity     = await detectCity();
-  btn.textContent = 'SPEL AANMAKEN';
+  btn.innerHTML   = btnOrig;
   btn.disabled    = false;
 
   const items = shuffle(pool).slice(0, need).map(t => t.replace(/\{stad\}/g, currentCity));
@@ -546,17 +553,32 @@ async function createGame() {
   gameCode = generateCode();
   isHost   = true;
 
-  await fbSet(gameCode, {
-    mode, sz, tm,
-    status:    'lobby',
-    over:      false,
-    turn:      0,
-    tstart:    0,
-    cells,
-    teams:     players.map(p => ({ name: p.name, color: p.color, score: 0, members: [] })),
-    winner:    -1,
-    winReason: '',
-  });
+  btn.textContent = 'SPEL AANMAKEN...';
+  btn.disabled    = true;
+
+  try {
+    await fbSet(gameCode, {
+      mode, sz, tm,
+      status:    'lobby',
+      over:      false,
+      turn:      0,
+      tstart:    0,
+      cells,
+      teams:     players.map(p => ({ name: p.name, color: p.color, score: 0, members: [] })),
+      winner:    -1,
+      winReason: '',
+    });
+  } catch (e) {
+    btn.innerHTML = btnOrig;
+    btn.disabled  = false;
+    const err = document.getElementById('serr');
+    err.style.display = 'block';
+    err.textContent   = 'Verbinding met Firebase mislukt. Controleer je internetverbinding.';
+    return;
+  }
+
+  btn.innerHTML = btnOrig;
+  btn.disabled  = false;
 
   document.getElementById('waitCode').textContent      = gameCode;
   document.getElementById('waitSub').textContent       = 'Deel deze code met andere spelers';
