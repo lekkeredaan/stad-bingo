@@ -46,6 +46,8 @@ body {
   font-size: 15px;
   line-height: 1.5;
   min-height: 100dvh;
+  overscroll-behavior-y: none;          /* no pull-to-refresh accident */
+  -webkit-text-size-adjust: 100%;       /* prevent iOS font inflation */
 }
 
 /* Subtle grain texture — breaks digital flatness */
@@ -63,13 +65,17 @@ body::after {
 .screen { display: none; }
 .screen.active { display: block; }
 
-/* ── App container ── */
-#app { padding: 16px; max-width: 940px; margin: 0 auto; }
+/* ── App container — phone-first, centered on wider screens ── */
+#app {
+  padding: 12px 12px calc(12px + env(safe-area-inset-bottom));
+  max-width: 480px;
+  margin: 0 auto;
+}
 
 /* ── Setup header ── */
 .setup-header {
   text-align: center;
-  padding: 36px 0 28px;
+  padding: 28px 0 20px;
   position: relative;
 }
 .setup-header::before {
@@ -127,11 +133,13 @@ textarea {
   border: 1px solid var(--bdr);
   color: var(--txt);
   border-radius: 8px;
-  padding: 9px 13px;
-  font-size: 14px;
+  padding: 11px 13px;
+  font-size: 16px;           /* ≥16px = no iOS auto-zoom */
   font-family: 'DM Sans', sans-serif;
   width: 100%;
   transition: border-color .2s, box-shadow .2s;
+  -webkit-appearance: none;  /* clean look on iOS */
+  appearance: none;
 }
 input[type=number] { width: 74px; }
 select { cursor: pointer; }
@@ -158,6 +166,8 @@ input:focus, select:focus, textarea:focus {
   white-space: nowrap;
   transition: background .15s, border-color .15s, color .15s,
               transform .1s, box-shadow .15s;
+  touch-action: manipulation;           /* no 300ms delay on mobile */
+  -webkit-tap-highlight-color: transparent;
 }
 .btn:active        { transform: scale(0.97) translateY(1px); }
 .btn:focus-visible { outline: 2px solid var(--acc); outline-offset: 2px; }
@@ -179,10 +189,10 @@ input:focus, select:focus, textarea:focus {
 .bgn:hover { background: #0c2818; color: #88ffcc; }
 
 /* Full-width CTA */
-.bfull { width: 100%; padding: 15px; font-size: 12px; margin-top: 8px; letter-spacing: 0.14em; }
+.bfull { width: 100%; padding: 16px 15px; min-height: 52px; font-size: 12px; margin-top: 8px; letter-spacing: 0.14em; }
 
 /* ── Mode grid ── */
-.modes { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 8px; }
+.modes { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; }
 .mc {
   border: 1px solid var(--bdr);
   border-radius: 12px;
@@ -198,7 +208,15 @@ input:focus, select:focus, textarea:focus {
   background: var(--surf);
   box-shadow: 0 0 0 1px var(--acc), inset 0 0 24px var(--acc-dim);
 }
-.mc .mi { font-size: 28px; margin-bottom: 6px; }
+.mc .mi {
+  font-size: 28px;          /* fallback */
+  margin-bottom: 8px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.mc .mi svg { width: 36px; height: 36px; flex-shrink: 0; }
 .mc .mn { font-family: 'Orbitron', monospace; font-size: 10px; color: #fff; letter-spacing: 0.1em; }
 .mc .md { font-size: 12px; color: var(--muted); margin-top: 4px; line-height: 1.35; font-family: 'DM Sans', sans-serif; }
 
@@ -240,15 +258,15 @@ input:focus, select:focus, textarea:focus {
 
 /* ── Timer bar ── */
 #tbar {
-  display: flex; align-items: center; gap: 14px; margin-bottom: 10px;
+  display: flex; align-items: center; gap: 10px; margin-bottom: 8px;
   background: var(--surf); border: 1px solid var(--bdr);
-  border-radius: 10px; padding: 10px 16px;
+  border-radius: 10px; padding: 8px 14px;
 }
 #tdsp {
   font-family: 'Orbitron', monospace;
-  font-size: 22px;
+  font-size: 18px;
   font-weight: 700;
-  min-width: 76px;
+  min-width: 62px;
   font-variant-numeric: tabular-nums;
 }
 #ttrack { flex: 1; height: 4px; background: var(--bdr); border-radius: 4px; overflow: hidden; }
@@ -256,11 +274,11 @@ input:focus, select:focus, textarea:focus {
 #tlbl   { font-size: 12px; color: var(--muted); white-space: nowrap; }
 
 /* ── Player chips ── */
-.chips { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 10px; }
+.chips { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 8px; }
 .chip {
-  padding: 8px 14px;
+  padding: 7px 12px;
   border-radius: 8px;
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 600;
   border: 1px solid transparent;
   transition: transform .2s, box-shadow .2s;
@@ -288,31 +306,27 @@ input:focus, select:focus, textarea:focus {
 }
 
 /* ── Bingo board ── */
-#board { display: grid; gap: 5px; width: fit-content; margin: 0 auto 14px; }
+#board { display: grid; gap: 4px; width: fit-content; margin: 0 auto 12px; }
 
 .cell {
-  border-radius: 9px;
+  border-radius: 8px;
   display: flex; flex-direction: column;
   align-items: center; justify-content: center;
   text-align: center;
   cursor: pointer;
   border: 1px solid var(--bdr);
   background: var(--surf);
-  line-height: 1.35; padding: 6px;
+  line-height: 1.3; padding: 5px;
   transition: background .15s, border-color .15s, transform .15s, box-shadow .15s;
   word-break: break-word;
   color: var(--txt);
   user-select: none;
   position: relative; overflow: hidden;
   text-wrap: balance;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
 }
-.cell:hover:not(.cl):not(.fr) {
-  background: #272320;
-  border-color: var(--acc);
-  transform: scale(1.03);
-  box-shadow: 0 6px 20px rgba(0,0,0,.4), 0 0 0 1px var(--acc-dim);
-}
-.cell:active:not(.cl):not(.fr) { transform: scale(0.98); }
+.cell:active:not(.cl):not(.fr) { transform: scale(0.95); background: #272320; border-color: var(--acc); }
 .cell.cl { cursor: default; }
 .cell.fr {
   cursor: default;
@@ -348,40 +362,71 @@ input:focus, select:focus, textarea:focus {
   to   { opacity: .22; }
 }
 
-/* ── Claim modal ── */
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  20%       { transform: translateX(-5px); }
+  40%       { transform: translateX(5px); }
+  60%       { transform: translateX(-4px); }
+  80%       { transform: translateX(4px); }
+}
+
+/* ── Join-screen team rows ── */
+.join-team {
+  display: flex; align-items: center; gap: 10px;
+  padding: 11px 14px; border-radius: 10px;
+  border: 1px solid transparent; cursor: pointer;
+  margin-bottom: 7px; transition: opacity .15s;
+}
+.join-team:hover   { opacity: .85; }
+.join-team.sel-team { outline: 2px solid var(--acc); outline-offset: 2px; }
+
+/* ── Claim modal — bottom sheet on mobile ── */
 #pmod {
   display: none; position: fixed; inset: 0;
-  background: rgba(0, 0, 0, .80);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
+  background: rgba(0, 0, 0, .75);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
   z-index: var(--z-modal);
-  align-items: center; justify-content: center; padding: 16px;
+  align-items: flex-end; justify-content: center;
 }
 #pmod.show { display: flex; }
 #pbox {
   background: var(--surf);
   border: 1px solid var(--bdr);
-  border-radius: 18px; padding: 28px;
-  max-width: 420px; width: 100%;
+  border-radius: 20px 20px 0 0;
+  padding: 20px 20px calc(20px + env(safe-area-inset-bottom));
+  width: 100%; max-width: 480px;
+  max-height: 92dvh;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
   text-align: center;
-  box-shadow: 0 32px 80px rgba(0,0,0,.6);
+  box-shadow: 0 -12px 48px rgba(0,0,0,.5);
+}
+/* Drag handle */
+#pbox::before {
+  content: '';
+  display: block;
+  width: 36px; height: 4px;
+  background: var(--bdr);
+  border-radius: 2px;
+  margin: 0 auto 16px;
 }
 #pbox h3 {
-  font-size: 14px; margin-bottom: 8px;
+  font-size: 13px; margin-bottom: 8px;
   color: #fff; font-family: 'Orbitron', monospace;
   letter-spacing: 0.1em;
 }
 .tt {
-  font-size: 14px; color: var(--txt); margin-bottom: 14px;
-  line-height: 1.6; padding: 13px;
+  font-size: 14px; color: var(--txt); margin-bottom: 12px;
+  line-height: 1.55; padding: 12px;
   background: var(--surf-deep); border-radius: 9px; text-align: left;
   border: 1px solid var(--bdr);
   font-weight: 500;
 }
 #pins { font-size: 12px; color: var(--muted); margin-bottom: 6px; }
-#pprev { max-width: 100%; border-radius: 10px; margin: 10px 0; display: none; max-height: 200px; object-fit: cover; }
+#pprev { max-width: 100%; border-radius: 10px; margin: 10px 0; display: none; max-height: 180px; object-fit: cover; }
 #pfile { display: none; }
-.pbr { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; margin-top: 14px; }
+.pbr { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; margin-top: 12px; }
 
 /* ── Win overlay ── */
 #wov {
@@ -396,7 +441,7 @@ input:focus, select:focus, textarea:focus {
 #wbox {
   background: var(--surf);
   border: 1px solid var(--bdr);
-  border-radius: 20px; padding: 38px 42px;
+  border-radius: 20px; padding: 32px 24px;
   text-align: center; max-width: 420px; width: 100%;
   position: relative; overflow: hidden;
   box-shadow: 0 40px 100px rgba(0,0,0,.7);
