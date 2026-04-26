@@ -340,13 +340,19 @@ async function fbGet(code) {
 function fbListen(code, cb) {
   stopListening();
   gameStream = new EventSource(`${DB_URL}/games/${code}.json`);
-  gameStream.addEventListener('put', async e => {
+
+  const handle = async e => {
     try {
       const d = JSON.parse(e.data);
-      if (d.path === '/' && d.data)   { cb(d.data); return; }
-      if (d.path !== '/' && d.data !== null) { const full = await fbGet(code); if (full) cb(full); }
+      if (d.path === '/' && d.data) { cb(d.data); return; }
+      // For partial updates (patch or sub-path put): refetch full game state
+      const full = await fbGet(code);
+      if (full) cb(full);
     } catch {}
-  });
+  };
+
+  gameStream.addEventListener('put',   handle);
+  gameStream.addEventListener('patch', handle);
   gameStream.onerror = () => {};
 }
 
