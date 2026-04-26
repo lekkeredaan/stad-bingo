@@ -1,6 +1,6 @@
 // ── Firebase config ───────────────────────────────────────────────────────────
 // 👇 Vul hier de URL van jouw Firebase Realtime Database in
-const DB_URL = 'https://stad-bingo-default-rtdb.firebasedatabase.app';
+const DB_URL = 'https://stad-bingo-default-rtdb.europe-west1.firebasedatabase.app';
 
 // Als DB_URL niet is ingesteld → lokale modus (geen Firebase vereist)
 const LOCAL_MODE = DB_URL.includes('YOUR-PROJECT');
