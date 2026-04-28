@@ -428,6 +428,41 @@ input:focus, select:focus, textarea:focus {
 #pfile { display: none; }
 .pbr { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; margin-top: 12px; }
 
+/* ── Help overlay ── */
+#hov {
+  display: none; position: fixed; inset: 0;
+  background: rgba(0,0,0,.65);
+  backdrop-filter: blur(8px);
+  z-index: calc(var(--z-win) - 1);
+  align-items: flex-end; justify-content: center;
+}
+#hov.show { display: flex; }
+#hbox {
+  background: var(--surf);
+  border: 1px solid var(--bdr);
+  border-radius: 20px 20px 0 0;
+  width: 100%; max-width: 480px;
+  padding: 20px 18px 36px;
+  max-height: 88dvh; overflow-y: auto;
+}
+.help-step {
+  display: flex; gap: 14px; align-items: flex-start;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--bdr);
+}
+.help-step:last-of-type { border-bottom: none; }
+.help-num {
+  width: 28px; height: 28px; flex-shrink: 0;
+  background: var(--acc-dim); border: 1px solid var(--acc);
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-family: 'Orbitron', monospace; font-size: 12px; font-weight: 700;
+  color: var(--acc); margin-top: 1px;
+}
+.help-title { font-weight: 600; font-size: 14px; margin-bottom: 3px; }
+.help-desc  { font-size: 13px; color: var(--muted); line-height: 1.5; }
+.help-desc strong { color: var(--txt); }
+
 /* ── Scoreboard overlay ── */
 #sov {
   display: none; position: fixed; inset: 0;

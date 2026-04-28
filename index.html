@@ -29,6 +29,9 @@
       <button class="btn bg2 bfull" onclick="showSetup()">
         <svg width="17" height="17" viewBox="0 0 17 17" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-right:6px"><rect x="1.5" y="1.5" width="14" height="14" rx="2.5"/><line x1="6" y1="1.5" x2="6" y2="15.5"/><line x1="11" y1="1.5" x2="11" y2="15.5"/><line x1="1.5" y1="6" x2="15.5" y2="6"/><line x1="1.5" y1="11" x2="15.5" y2="11"/><circle cx="3.7" cy="3.7" r="1" fill="currentColor" stroke="none"/><circle cx="8.5" cy="8.5" r="1" fill="currentColor" stroke="none"/><circle cx="13.3" cy="13.3" r="1" fill="currentColor" stroke="none"/></svg>NIEUW SPEL AANMAKEN
       </button>
+      <button class="btn bg2 bfull" onclick="toggleHelp()" style="opacity:.7">
+        <svg width="17" height="17" viewBox="0 0 17 17" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-right:6px"><circle cx="8.5" cy="8.5" r="7"/><path d="M8.5 11.5v.5"/><path d="M6.5 6.5a2 2 0 0 1 3.9.7c0 1.3-1.9 1.8-1.9 3"/></svg>HOE WERKT HET?
+      </button>
     </div>
   </div>
 
@@ -189,6 +192,54 @@
         <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-right:4px"><path d="M2.5 7l3.5 3.5L12 4"/></svg>Claim!
       </button>
     </div>
+  </div>
+</div>
+
+<!-- ── Help overlay ── -->
+<div id="hov" role="dialog" aria-modal="true" onclick="if(event.target===this)toggleHelp()">
+  <div id="hbox">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">
+      <div style="font-family:'Orbitron',monospace;font-size:15px;font-weight:700;letter-spacing:0.05em">HOE WERKT HET?</div>
+      <button class="btn bg2" style="padding:5px 11px;font-size:11px" onclick="toggleHelp()">✕</button>
+    </div>
+
+    <div class="help-step">
+      <div class="help-num">1</div>
+      <div>
+        <div class="help-title">Eén persoon maakt het spel aan</div>
+        <div class="help-desc">Kies een speltype, pas het bord aan en voer teamnamen in. Je krijgt een 6-letterige code.</div>
+      </div>
+    </div>
+    <div class="help-step">
+      <div class="help-num">2</div>
+      <div>
+        <div class="help-title">Anderen doen mee met de code</div>
+        <div class="help-desc">Elke speler opent de app, tikt op <strong>Meedoen met code</strong> en voert de code in. Kies een team en je naam.</div>
+      </div>
+    </div>
+    <div class="help-step">
+      <div class="help-num">3</div>
+      <div>
+        <div class="help-title">De host start het spel</div>
+        <div class="help-desc">Zodra iedereen in de lobby zit, kiest de host ook een team en tikt op <strong>Spel starten</strong>.</div>
+      </div>
+    </div>
+    <div class="help-step">
+      <div class="help-num">4</div>
+      <div>
+        <div class="help-title">Claim vakjes — maak een foto als bewijs</div>
+        <div class="help-desc">Tik op een vakje, voltooi de opdracht en maak een foto. Het vakje kleurt in de kleur van jouw team.</div>
+      </div>
+    </div>
+    <div class="help-step">
+      <div class="help-num">5</div>
+      <div>
+        <div class="help-title">Win met een rij vol of de meeste vakjes</div>
+        <div class="help-desc">Vul een rij, kolom of diagonaal → direct gewonnen! Loopt de timer af? Het team met de meeste vakjes wint.</div>
+      </div>
+    </div>
+
+    <button class="btn bp bfull" onclick="toggleHelp()" style="margin-top:8px">Aan de slag!</button>
   </div>
 </div>
 

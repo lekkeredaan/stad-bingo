@@ -1121,6 +1121,12 @@ function showTie(msg) {
   document.getElementById('wov').classList.add('show');
 }
 
+// ── Help ──────────────────────────────────────────────────────────────────────
+
+function toggleHelp() {
+  document.getElementById('hov').classList.toggle('show');
+}
+
 // ── Scoreboard ───────────────────────────────────────────────────────────────
 
 function toggleScoreboard() {
