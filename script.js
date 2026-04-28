@@ -939,6 +939,17 @@ function timeUp() {
   }
 }
 
+// ── Cell font sizing ──────────────────────────────────────────────────────────
+// Scale font size so text always fits: larger cells + shorter text = bigger font.
+// Formula: available_side / sqrt(charCount * charAspect)
+// charAspect ≈ 0.65 accounts for character width vs height ratio + line-height.
+
+function cellFontSize(cp, len) {
+  const avail = cp - 10;           // subtract padding
+  const byArea = avail / Math.sqrt(len * 0.65);
+  return Math.max(7, Math.min(13, Math.floor(byArea)));
+}
+
 // ── Render game ───────────────────────────────────────────────────────────────
 
 function renderGame() {
@@ -977,7 +988,7 @@ function renderGame() {
     const ownerName = cell.claimed ? gs.players[cell.claimed - 1].name : '';
     const photoIcon = cell.photo ? `<span class="pb" style="color:var(--acc)">${BTN.camSm}</span>` : '';
     const wc        = cell.wc ? ' wc' : '';
-    const fs        = Math.max(9, Math.min(11, Math.floor(cp / 8)));
+    const fs        = cellFontSize(cp, cell.text.length);
 
     return `<div class="cell${cell.claimed ? ' cl' : ''}${wc}"
                style="width:${cp}px;height:${cp}px;background:${bg};border-color:${bc};color:${tc};font-size:${fs}px"
