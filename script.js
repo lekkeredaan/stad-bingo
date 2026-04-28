@@ -45,6 +45,17 @@ const ICONS = {
     <path d="M22.5 4v3M20.5 5.5h4"/>
   </svg>`,
 
+  loco: `<svg width="36" height="36" viewBox="0 0 36 36" fill="none" stroke="#e89520" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M18 3l2.5 6.5L27 8l-4.5 5.5L26 20l-6.5-3L13 22l1.5-7L9 11l6.5-.5z" fill="#e89520" fill-opacity=".18"/>
+    <path d="M18 3l2.5 6.5L27 8l-4.5 5.5L26 20l-6.5-3L13 22l1.5-7L9 11l6.5-.5z"/>
+    <path d="M6 26c2-3 5-2 7-4" stroke-linecap="round"/>
+    <path d="M30 26c-2-3-5-2-7-4" stroke-linecap="round"/>
+    <path d="M12 30c1-2 3-3 6-3s5 1 6 3" stroke-linecap="round"/>
+    <circle cx="13" cy="13" r="1.2" fill="#e89520" stroke="none"/>
+    <circle cx="25" cy="16" r="1" fill="#e89520" stroke="none"/>
+    <circle cx="9" cy="22" r=".9" fill="#e89520" stroke="none"/>
+  </svg>`,
+
   custom: `<svg width="36" height="36" viewBox="0 0 36 36" fill="none" stroke="#e89520" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
     <path d="M24 5l7 7-18 18H6v-7L24 5z"/>
     <path d="M20 9l7 7"/>
@@ -64,8 +75,9 @@ const BTN = {
 const MODES = [
   { id: 'family',  icon: ICONS.family,  name: 'Familie',     desc: 'Leuk voor alle leeftijden' },
   { id: 'kids',    icon: ICONS.kids,    name: 'Kids',        desc: 'Speciaal voor kinderen' },
-  { id: 'adult18', icon: ICONS.adult18, name: '18+',         desc: 'Vrijgezellenfeest & teamuitjes' },
   { id: 'adults',  icon: ICONS.adults,  name: 'Volwassenen', desc: 'Uitdagend, geen vieze content' },
+  { id: 'adult18', icon: ICONS.adult18, name: '18+',         desc: 'Vrijgezellenfeest & teamuitjes' },
+  { id: 'loco',    icon: ICONS.loco,    name: 'KNETTERGEK',  desc: 'Voor wie geen schaamte meer heeft' },
   { id: 'custom',  icon: ICONS.custom,  name: 'Vrij',        desc: 'Eigen opdrachten invoeren' },
 ];
 
@@ -236,6 +248,59 @@ const TASKS = {
     'Vind de beste koffie in de buurt','Foto van iets symmetrisch',
     'Vind iemand met een bijzonder verhaal','Foto van stadslichten na zonsondergang',
     'Vind de meest onverwachte winkel','Foto van iets dat je verrast',
+  ],
+
+  loco: [
+    'Roep midden op straat "HEEFT IEMAND MIJN PAARD GEZIEN?" en wacht op reactie',
+    'Loop 2 minuten achteruit door de stad en doe alsof dit volkomen normaal is',
+    'Ga op de grond liggen op een drukke plek en blijf 30 seconden doodstil',
+    'Vraag een willekeurige winkel om een product dat ze absoluut niet hebben — houd vol',
+    'Doe alsof je een straatmuzikant bent, zonder instrument — geef een volledige performance',
+    'Ren naar een vreemde, geef een enthousiastste high five en ren weg zonder iets te zeggen',
+    'Ga op handen en voeten een winkel binnen en vraag beleefd om hulp',
+    'Vertel een voorbijganger een volledig verzonnen dramatisch levensverhaal',
+    'Loop 3 minuten lang met een denkbeeldige hond aan de lijn — aaibaar, trots',
+    'Bestel bij een café alsof je de eigenaar bent en de medewerkers jouw personeel zijn',
+    'Vraag een vreemde of je even zijn of haar schoenen mag passen',
+    'Zit op een bankje en doe 5 minuten alsof je wacht op een heel belangrijke persoon — kijk af en toe ongeduldig op je horloge',
+    'Leg aan drie verschillende vreemden uit dat je beroemd bent, maar liever anoniem blijft',
+    'Vraag een willekeurig iemand om een handtekening — "voor de herinnering"',
+    'Doe alsof je een reportage maakt over de straat, inclusief serieuze interviews',
+    'Loop mee met een groep toeristen alsof je de gids bent — minimaal 1 minuut',
+    'Ga een willekeurige winkel binnen, bekijk alles heel aandachtig en loop dan weg zonder iets te zeggen',
+    'Vraag drie mensen op rij om de weg naar een straat die niet bestaat',
+    'Doe alsof je telefoon trilt, neem op en voer een serieus zakengesprek op straat',
+    'Klop aan bij een willekeurige deur en vraag of ze een kopje suiker hebben',
+    'Vertel een vreemde dat je zijn of haar tweelingbroer of zus al jaren zoekt',
+    'Ga op een bankje zitten en eet een imaginaire maaltijd — vork en mes en alles',
+    'Vraag een cafémedewerker of je het menu even mag recenseren voor je blog',
+    'Doe een volledige warming-up alsof je een topsporter bent — midden op straat',
+    'Zeg gedag tegen elke lantaarnpaal die je passeert voor een hele straat lang',
+    'Probeer iemand te overtuigen dat er morgen een nationale feestdag is die niemand kent',
+    'Vraag in een supermarkt of ze ook "biologische lucht" verkopen',
+    'Loop met gespreide armen door een drukke straat alsof je een vliegtuig bent',
+    'Ga voor een etalage staan en doe alsof je naar een spannende film kijkt',
+    'Vraag een vreemde om een foto — zet dan een absurd pose neer en houd die vol',
+    'Vertel iemand dat je psychisch voelt dat ze vandaag een geweldige dag zullen hebben',
+    'Doe alsof je verdwaald bent in een stad die je perfect kent — vraag vijf mensen om hulp',
+    'Ga op de grond zitten en teken een denkbeeldig portret van een voorbijganger — overhandig het',
+    'Geef een minutenlange TED-talk op straat over een willekeurig object dat je ziet',
+    'Vraag een vreemde of je even op zijn of haar rugzak mag passen — ga dan zitten',
+    'Loop gebukt door een straat alsof het plafond te laag is',
+    'Sla vriendschappelijk een arm om een lantaarnpaal en maak een groepsfoto',
+    'Vertel een complete vreemde dat je hem al jarenlang bewondert',
+    'Doe een dansje zodra je muziek hoort, waar je ook bent',
+    'Vraag in een apotheek iets voor "te veel enthousiasme"',
+    'Wijs naar de lucht en doe alsof je iets spectaculairs ziet — wacht tot anderen ook kijken',
+    'Doe alsof je een onzichtbare vriend meeneemt — bestel ook voor hem of haar',
+    'Vraag een willekeurig iemand of ze je kunnen helpen een woord te spellen',
+    'Ga een gebouw binnen, loop langzaam een rondje en verlaat het weer met een tevreden knikje',
+    'Fluister iets geheimzinnigs in het oor van een teamgenoot terwijl een vreemde toekijkt',
+    'Vraag een winkelier vriendelijk om een product op de hoogste plank te pakken — neem het dan toch niet',
+    'Doe alsof je in slow motion loopt door een drukke straat',
+    'Leg een vreemde heel serieus uit hoe je loopt — alsof het een complexe vaardigheid is',
+    'Zeg "bedankt voor alles" tegen een pinautomaat na het pinnen',
+    'Vraag drie verschillende mensen of ze je kunnen helpen je eigen naam te onthouden',
   ],
 };
 
