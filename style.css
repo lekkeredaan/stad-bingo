@@ -428,6 +428,41 @@ input:focus, select:focus, textarea:focus {
 #pfile { display: none; }
 .pbr { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; margin-top: 12px; }
 
+/* ── Scoreboard overlay ── */
+#sov {
+  display: none; position: fixed; inset: 0;
+  background: rgba(0,0,0,.6);
+  backdrop-filter: blur(6px);
+  z-index: calc(var(--z-win) - 1);
+  align-items: flex-end; justify-content: center; padding: 0;
+}
+#sov.show { display: flex; }
+#sbox {
+  background: var(--surf);
+  border: 1px solid var(--bdr);
+  border-radius: 20px 20px 0 0;
+  width: 100%; max-width: 480px;
+  padding: 20px 18px 32px;
+  max-height: 70dvh; overflow-y: auto;
+}
+.sb-row {
+  display: flex; align-items: center; gap: 12px;
+  padding: 11px 14px; border-radius: 12px;
+  margin-bottom: 8px;
+  border: 1px solid transparent;
+}
+.sb-rank {
+  font-family: 'Orbitron', monospace;
+  font-size: 18px; font-weight: 700;
+  width: 28px; text-align: center; flex-shrink: 0;
+}
+.sb-name { flex: 1; font-weight: 600; font-size: 15px; }
+.sb-members { font-size: 11px; opacity: .65; margin-top: 2px; }
+.sb-score {
+  font-family: 'Orbitron', monospace;
+  font-size: 22px; font-weight: 700;
+}
+
 /* ── Win overlay ── */
 #wov {
   display: none; position: fixed; inset: 0;

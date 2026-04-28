@@ -255,6 +255,7 @@ let gs             = null;
 let ti             = null;
 let pci            = -1;
 let pendingTeamIdx = -1;
+let myTeamIdx      = -1;   // which team this device is playing for
 let photos         = {};
 let currentCity = 'jouw stad';
 let gameCode    = null;
@@ -271,12 +272,14 @@ function showScreen(id) {
 function showHome() {
   stopListening();
   clearInterval(ti);
-  gs       = null;
-  pci      = -1;
-  photos   = {};
-  gameCode = null;
-  isHost   = false;
+  gs         = null;
+  pci        = -1;
+  myTeamIdx  = -1;
+  photos     = {};
+  gameCode   = null;
+  isHost     = false;
   document.getElementById('wov').classList.remove('show');
+  document.getElementById('sov').classList.remove('show');
   document.getElementById('gal').style.display = 'none';
 
   // Verberg de join-knop als Firebase niet is ingesteld
@@ -657,10 +660,12 @@ async function confirmJoin() {
   );
   await fbPatch(gameCode, { teams });
 
-  isHost = false;
+  myTeamIdx = teamIdx;
+  isHost    = false;
   document.getElementById('waitCode').textContent       = gameCode;
   document.getElementById('waitSub').textContent        = 'Wachten tot de host het spel start...';
   document.getElementById('waitStartBtn').style.display = 'none';
+  document.getElementById('hostJoinCard').style.display = 'none';
   renderWaitPlayers(teams);
   showScreen('wait');
   fbListen(gameCode, onGameData);
@@ -741,6 +746,7 @@ async function hostStartGame() {
 
   await fbPatch(gameCode, { teams, status: 'playing', tstart: Date.now() });
 
+  myTeamIdx       = teamIdx;
   btn.textContent = 'SPEL STARTEN';
   btn.disabled    = false;
 }
@@ -868,7 +874,7 @@ function timeUp() {
 
 function renderGame() {
   const m = MODES.find(x => x.id === gs.mode);
-  document.getElementById('mlbl').textContent = `${m.icon} ${m.name}`;
+  document.getElementById('mlbl').innerHTML = `${m.icon} <span style="vertical-align:middle">${m.name}</span>`;
 
   if (gs.tm > 0) document.getElementById('tbar').style.display = 'flex';
 
@@ -927,24 +933,30 @@ function clickCell(i) {
   pci            = i;
   pendingTeamIdx = -1;
 
-  document.getElementById('ptxt').textContent    = cell.text;
-  document.getElementById('pprev').style.display = 'none';
-  document.getElementById('pprev').src           = '';
-  document.getElementById('pconf').style.display = 'none';
+  document.getElementById('ptxt').textContent     = cell.text;
+  document.getElementById('pprev').style.display  = 'none';
+  document.getElementById('pprev').src            = '';
+  document.getElementById('pconf').style.display  = 'none';
   document.getElementById('pshoot').style.display = 'none';
-  document.getElementById('pfile').value         = '';
+  document.getElementById('pfile').value          = '';
 
-  // Team selector — anyone can claim, no turn order
-  document.getElementById('pins').innerHTML =
-    `<div style="margin-bottom:10px;font-size:12px;color:var(--muted);font-family:'Orbitron',monospace;letter-spacing:0.08em">WIE CLAIMT DIT?</div>` +
-    `<div style="display:flex;flex-wrap:wrap;gap:8px;justify-content:center">` +
-    gs.players.map((p, idx) => {
-      const c = COLS[p.color];
-      return `<button class="btn team-sel-btn" data-idx="${idx}"
-                 style="background:${c.b};border:2px solid ${c.m};color:${c.l};padding:7px 16px;font-family:'DM Sans',sans-serif;font-size:13px;font-weight:600;letter-spacing:0"
-                 onclick="selectClaimTeam(${idx})">${p.name}</button>`;
-    }).join('') +
-    `</div>`;
+  if (myTeamIdx >= 0) {
+    // Player is on a specific team — skip selector, go straight to photo
+    document.getElementById('pins').innerHTML = '';
+    selectClaimTeam(myTeamIdx);
+  } else {
+    // Unknown device or spectator — show team selector
+    document.getElementById('pins').innerHTML =
+      `<div style="margin-bottom:10px;font-size:12px;color:var(--muted);font-family:'Orbitron',monospace;letter-spacing:0.08em">WIE CLAIMT DIT?</div>` +
+      `<div style="display:flex;flex-wrap:wrap;gap:8px;justify-content:center">` +
+      gs.players.map((p, idx) => {
+        const c = COLS[p.color];
+        return `<button class="btn team-sel-btn" data-idx="${idx}"
+                   style="background:${c.b};border:2px solid ${c.m};color:${c.l};padding:7px 16px;font-family:'DM Sans',sans-serif;font-size:13px;font-weight:600;letter-spacing:0"
+                   onclick="selectClaimTeam(${idx})">${p.name}</button>`;
+      }).join('') +
+      `</div>`;
+  }
 
   document.getElementById('pmod').classList.add('show');
 }
@@ -1085,6 +1097,7 @@ function showWinner(pi, reason) {
        <div class="pn">${pl.name}</div>
      </div>`
   ).join('');
+  document.getElementById('sov').classList.remove('show');
   document.getElementById('wov').classList.add('show');
 }
 
@@ -1100,7 +1113,41 @@ function showTie(msg) {
        <div class="pn">${pl.name}</div>
      </div>`
   ).join('');
+  document.getElementById('sov').classList.remove('show');
   document.getElementById('wov').classList.add('show');
+}
+
+// ── Scoreboard ───────────────────────────────────────────────────────────────
+
+function toggleScoreboard() {
+  const el = document.getElementById('sov');
+  const opening = !el.classList.contains('show');
+  if (opening) renderScoreboard();
+  el.classList.toggle('show');
+}
+
+function renderScoreboard() {
+  if (!gs) return;
+  const sorted = [...gs.players.map((p, i) => ({ ...p, i }))]
+    .sort((a, b) => b.score - a.score);
+
+  const medals = ['🥇', '🥈', '🥉'];
+  let lastScore = -1, rank = 0;
+
+  document.getElementById('sblist').innerHTML = sorted.map((p, idx) => {
+    if (p.score !== lastScore) { rank = idx + 1; lastScore = p.score; }
+    const c       = COLS[p.color];
+    const members = (p.members || []).join(', ');
+    const medal   = rank <= 3 ? medals[rank - 1] : `${rank}`;
+    return `<div class="sb-row" style="background:${c.b};border-color:${c.m}55">
+              <div class="sb-rank">${medal}</div>
+              <div style="flex:1;min-width:0">
+                <div class="sb-name" style="color:${c.l}">${p.name}</div>
+                ${members ? `<div class="sb-members">${members}</div>` : ''}
+              </div>
+              <div class="sb-score" style="color:${c.m}">${p.score}</div>
+            </div>`;
+  }).join('');
 }
 
 // ── Gallery ───────────────────────────────────────────────────────────────────
