@@ -272,6 +272,7 @@ function showScreen(id) {
 function showHome() {
   stopListening();
   clearInterval(ti);
+  clearSession();
   gs         = null;
   pci        = -1;
   myTeamIdx  = -1;
@@ -597,6 +598,7 @@ async function createGame() {
   renderWaitPlayers(initTeams);
   renderHostTeamPicker(initTeams);
   showScreen('wait');
+  saveSession();
   fbListen(gameCode, onGameData);
 }
 
@@ -668,6 +670,7 @@ async function confirmJoin() {
   document.getElementById('hostJoinCard').style.display = 'none';
   renderWaitPlayers(teams);
   showScreen('wait');
+  saveSession();
   fbListen(gameCode, onGameData);
 }
 
@@ -747,6 +750,7 @@ async function hostStartGame() {
   await fbPatch(gameCode, { teams, status: 'playing', tstart: Date.now() });
 
   myTeamIdx       = teamIdx;
+  saveSession();
   btn.textContent = 'SPEL STARTEN';
   btn.disabled    = false;
 }
@@ -1187,5 +1191,77 @@ function resetGame() {
   showHome();
 }
 
+// ── Session persistence ───────────────────────────────────────────────────────
+
+function saveSession() {
+  if (!gameCode) return;
+  localStorage.setItem('sbSession', JSON.stringify({ gameCode, myTeamIdx, isHost }));
+}
+
+function clearSession() {
+  localStorage.removeItem('sbSession');
+}
+
+async function restoreSession() {
+  const raw = localStorage.getItem('sbSession');
+  if (!raw) return false;
+  try {
+    const saved = JSON.parse(raw);
+    if (!saved?.gameCode) return false;
+
+    const data = await fbGet(saved.gameCode);
+    if (!data || data.status === 'over') { clearSession(); return false; }
+
+    gameCode  = saved.gameCode;
+    myTeamIdx = saved.myTeamIdx ?? -1;
+    isHost    = saved.isHost    ?? false;
+
+    if (data.status === 'lobby') {
+      const teams = data.teams || [];
+      document.getElementById('waitCode').textContent       = gameCode;
+      document.getElementById('waitSub').textContent        = isHost
+        ? 'Deel deze code met andere spelers'
+        : 'Wachten tot de host het spel start...';
+      document.getElementById('waitStartBtn').style.display = isHost ? 'block' : 'none';
+      document.getElementById('hostJoinCard').style.display = isHost ? 'block' : 'none';
+      if (isHost) renderHostTeamPicker(teams);
+      renderWaitPlayers(teams);
+      showScreen('wait');
+      fbListen(gameCode, onGameData);
+      return true;
+    }
+
+    if (data.status === 'playing') {
+      photos = {};
+      const tm = data.tm || 0;
+      gs = {
+        mode:    data.mode,
+        sz:      data.sz,
+        cells:   data.cells.map(c => ({ ...c, photo: null })),
+        players: data.teams,
+        turn:    data.turn,
+        over:    false,
+        tm,
+        ts:      tm * 60,
+        tstart:  data.tstart || null,
+      };
+      document.getElementById('gal').style.display = 'none';
+      showScreen('game');
+      if (tm > 0 && gs.tstart) startTimer();
+      renderGame();
+      fbListen(gameCode, onGameData);
+      return true;
+    }
+  } catch { /* fall through */ }
+  clearSession();
+  return false;
+}
+
 // ── Boot ──────────────────────────────────────────────────────────────────────
-showHome();
+
+async function init() {
+  if (LOCAL_MODE) { showHome(); return; }
+  const restored = await restoreSession();
+  if (!restored) showHome();
+}
+init();
