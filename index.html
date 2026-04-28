@@ -102,6 +102,12 @@
       <div class="ct">Teams in de lobby</div>
       <div id="waitPlayers"></div>
     </div>
+    <div class="card" id="hostJoinCard">
+      <div class="ct">Jouw naam &amp; team</div>
+      <input type="text" id="hostName" placeholder="Je naam" maxlength="20">
+      <div id="hostTeamList" style="margin-top:10px"></div>
+      <div id="hostJoinErr" style="display:none;color:#e07070;font-size:13px;margin-top:8px"></div>
+    </div>
     <button class="btn bp bfull" id="waitStartBtn" onclick="hostStartGame()">
       <svg width="14" height="14" viewBox="0 0 14 14" fill="currentColor" style="vertical-align:middle;margin-right:6px"><path d="M4 2.5l7 4.5-7 4.5z"/></svg>SPEL STARTEN
     </button>

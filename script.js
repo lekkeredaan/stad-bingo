@@ -341,18 +341,19 @@ function fbListen(code, cb) {
   stopListening();
   gameStream = new EventSource(`${DB_URL}/games/${code}.json`);
 
-  const handle = async e => {
+  const handle = async (e, isPatch) => {
     try {
       const d = JSON.parse(e.data);
-      if (d.path === '/' && d.data) { cb(d.data); return; }
-      // For partial updates (patch or sub-path put): refetch full game state
+      // 'put' on '/' = full snapshot → pass directly
+      if (!isPatch && d.path === '/' && d.data) { cb(d.data); return; }
+      // All other cases (patch, sub-path put) = partial data → refetch full state
       const full = await fbGet(code);
       if (full) cb(full);
     } catch {}
   };
 
-  gameStream.addEventListener('put',   handle);
-  gameStream.addEventListener('patch', handle);
+  gameStream.addEventListener('put',   e => handle(e, false));
+  gameStream.addEventListener('patch', e => handle(e, true));
   gameStream.onerror = () => {};
 }
 
@@ -586,10 +587,12 @@ async function createGame() {
   btn.innerHTML = btnOrig;
   btn.disabled  = false;
 
-  document.getElementById('waitCode').textContent      = gameCode;
-  document.getElementById('waitSub').textContent       = 'Deel deze code met andere spelers';
+  document.getElementById('waitCode').textContent       = gameCode;
+  document.getElementById('waitSub').textContent        = 'Deel deze code met andere spelers';
   document.getElementById('waitStartBtn').style.display = 'block';
-  renderWaitPlayers(players.map(p => ({ ...p, members: [] })));
+  const initTeams = players.map(p => ({ ...p, members: [] }));
+  renderWaitPlayers(initTeams);
+  renderHostTeamPicker(initTeams);
   showScreen('wait');
   fbListen(gameCode, onGameData);
 }
@@ -671,6 +674,27 @@ function showJoinErr(msg) {
 
 // ── Wait scherm (lobby) ───────────────────────────────────────────────────────
 
+function renderHostTeamPicker(teams) {
+  const list = document.getElementById('hostTeamList');
+  if (!list) return;
+  list.dataset.sel = '';
+  list.innerHTML = teams.map((t, i) => {
+    const c = COLS[t.color];
+    return `<div class="join-team" data-idx="${i}"
+               style="border-color:${c.m};background:${c.b}"
+               onclick="selectHostTeam(this,${i})">
+              <div class="cd" style="background:${c.m};width:12px;height:12px;flex-shrink:0"></div>
+              <div style="color:${c.l};font-weight:600;font-size:14px">${t.name}</div>
+            </div>`;
+  }).join('');
+}
+
+function selectHostTeam(el, i) {
+  document.querySelectorAll('#hostTeamList .join-team').forEach(e => e.classList.remove('sel-team'));
+  el.classList.add('sel-team');
+  document.getElementById('hostTeamList').dataset.sel = i;
+}
+
 function renderWaitPlayers(teams) {
   document.getElementById('waitPlayers').innerHTML = teams.map(t => {
     const c       = COLS[t.color];
@@ -687,10 +711,36 @@ function renderWaitPlayers(teams) {
 
 async function hostStartGame() {
   if (!isHost || !gameCode) return;
+
+  const name    = document.getElementById('hostName').value.trim();
+  const selRaw  = document.getElementById('hostTeamList').dataset.sel;
+  const teamIdx = selRaw !== '' ? +selRaw : -1;
+  const errEl   = document.getElementById('hostJoinErr');
+
+  if (!name) {
+    errEl.textContent = 'Vul eerst je naam in';
+    errEl.style.display = 'block';
+    return;
+  }
+  if (teamIdx < 0) {
+    errEl.textContent = 'Kies eerst een team';
+    errEl.style.display = 'block';
+    return;
+  }
+  errEl.style.display = 'none';
+
   const btn = document.getElementById('waitStartBtn');
   btn.textContent = 'STARTEN...';
   btn.disabled    = true;
-  await fbPatch(gameCode, { status: 'playing', tstart: Date.now() });
+
+  // Add host to chosen team, then set status to playing
+  const data  = await fbGet(gameCode);
+  const teams = (data?.teams || players.map(p => ({ ...p, members: [] }))).map((t, i) =>
+    i === teamIdx ? { ...t, members: [...(t.members || []), name] } : t
+  );
+
+  await fbPatch(gameCode, { teams, status: 'playing', tstart: Date.now() });
+
   btn.textContent = 'SPEL STARTEN';
   btn.disabled    = false;
 }
@@ -707,7 +757,19 @@ function onGameData(data) {
   const screen = document.querySelector('.screen.active')?.id;
 
   if (data.status === 'lobby') {
-    if (screen === 'wait') renderWaitPlayers(data.teams);
+    if (screen === 'wait') {
+      renderWaitPlayers(data.teams);
+      // Keep host team picker in sync but preserve current selection
+      if (isHost) {
+        const sel = document.getElementById('hostTeamList')?.dataset.sel;
+        renderHostTeamPicker(data.teams);
+        if (sel !== '') {
+          const el = document.querySelector(`#hostTeamList [data-idx="${sel}"]`);
+          if (el) el.classList.add('sel-team');
+          document.getElementById('hostTeamList').dataset.sel = sel;
+        }
+      }
+    }
     return;
   }
 
