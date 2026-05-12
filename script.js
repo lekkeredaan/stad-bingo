@@ -1097,6 +1097,20 @@ async function confirmClaim() {
     return;
   }
 
+  // ── Race condition guard: verify cell is still unclaimed on the server ──────
+  if (gameCode) {
+    const confBtn = document.getElementById('pconf');
+    confBtn.textContent = '...';
+    confBtn.disabled = true;
+    const latest = await fbGet(gameCode);
+    confBtn.innerHTML = '<svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-right:4px"><path d="M2.5 7l3.5 3.5L12 4"/></svg>Claim!';
+    confBtn.disabled = false;
+    if (latest?.cells?.[i]?.claimed) {
+      closeClaimModal();
+      return; // already taken — silently close, board will sync via SSE
+    }
+  }
+
   const cell   = gs.cells[i];
   const pi     = pendingTeamIdx;
   const pn     = pi + 1;
