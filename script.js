@@ -5,6 +5,12 @@ const DB_URL = 'https://stad-bingo-default-rtdb.europe-west1.firebasedatabase.ap
 // Als DB_URL niet is ingesteld → lokale modus (geen Firebase vereist)
 const LOCAL_MODE = DB_URL.includes('YOUR-PROJECT');
 
+// ── Verzilvercodes & admin ──────────────────────────────────────────────────────
+// Masterscode werkt altijd (geen verzilvering/verloop) en ontgrendelt het adminpaneel.
+const MASTER_CODE  = 'LOCKOUT-MASTER-2026';
+const HOUR         = 60 * 60 * 1000;
+const VALIDITY_MS  = 72 * HOUR; // codes en lobby's zijn 72 uur geldig na verzilvering
+
 // ── Icon library ──────────────────────────────────────────────────────────────
 
 /* Mode card icons — amber line art, 36 × 36 */
@@ -326,6 +332,8 @@ let currentCity = 'jouw stad';
 let gameCode    = null;
 let isHost      = false;
 let gameStream  = null;
+let redeemCode  = null;   // verzilverde code die dit spel heeft aangemaakt
+let isAdmin     = false;  // masterscode ingevoerd
 
 // ── Scherm navigatie ──────────────────────────────────────────────────────────
 
@@ -344,6 +352,8 @@ function showHome() {
   photos     = {};
   gameCode   = null;
   isHost     = false;
+  redeemCode = null;
+  isAdmin    = false;
   document.getElementById('wov').classList.remove('show');
   document.getElementById('sov').classList.remove('show');
   document.getElementById('gal').style.display = 'none';
@@ -359,6 +369,126 @@ function showSetup() {
   players = [{ name: 'Team 1', color: 0 }, { name: 'Team 2', color: 1 }];
   initSetup();
   showScreen('setup');
+}
+
+// ── Code verzilveren (klantreis: code → "Maak mijn spel") ───────────────────────
+
+function showRedeem() {
+  if (LOCAL_MODE) { showSetup(); return; }
+  redeemCode = null;
+  isAdmin    = false;
+  document.getElementById('redeemCode').value           = '';
+  document.getElementById('redeemErr').style.display    = 'none';
+  document.getElementById('redeemBtn').textContent      = 'MAAK MIJN SPEL';
+  document.getElementById('redeemBtn').disabled         = false;
+  document.getElementById('adminPanel').style.display   = 'none';
+  showScreen('redeem');
+}
+
+function showRedeemErr(msg) {
+  const el = document.getElementById('redeemErr');
+  el.textContent   = msg;
+  el.style.display = 'block';
+}
+
+async function submitRedeem() {
+  const code  = document.getElementById('redeemCode').value.trim().toUpperCase();
+  const btn   = document.getElementById('redeemBtn');
+  document.getElementById('redeemErr').style.display = 'none';
+
+  if (!code) { showRedeemErr('Vul je code in.'); return; }
+
+  // ── Masterscode: altijd geldig, ontgrendelt adminpaneel ──────────────────────
+  if (code === MASTER_CODE) {
+    redeemCode = null;
+    isAdmin    = true;
+    document.getElementById('adminPanel').style.display = 'block';
+    renderAdminCodes();
+    showSetup();
+    return;
+  }
+
+  btn.textContent = 'CONTROLEREN...';
+  btn.disabled    = true;
+  const entry = await fbGetPath(`redeemCodes/${code}`);
+  btn.textContent = 'MAAK MIJN SPEL';
+  btn.disabled    = false;
+
+  if (!entry) { showRedeemErr('Code niet gevonden. Controleer je code.'); return; }
+
+  const now = Date.now();
+
+  if (entry.status === 'redeemed') {
+    if (entry.expiresAt && entry.expiresAt < now) {
+      showRedeemErr('Deze code is verlopen (72 uur na verzilvering verstreken).');
+      return;
+    }
+    // Code is al verzilverd en nog geldig — terug naar de bijbehorende lobby als host
+    if (entry.gameCode) {
+      const game = await fbGet(entry.gameCode);
+      if (game && game.status !== 'over' && (!game.expiresAt || game.expiresAt > now)) {
+        gameCode   = entry.gameCode;
+        isHost     = true;
+        redeemCode = code;
+        if (game.status === 'lobby') {
+          document.getElementById('waitCode').textContent       = gameCode;
+          document.getElementById('waitSub').textContent        = 'Deel deze code met andere spelers';
+          document.getElementById('waitStartBtn').style.display = 'block';
+          document.getElementById('hostJoinCard').style.display = myTeamIdx < 0 ? 'block' : 'none';
+          renderHostTeamPicker(game.teams);
+          renderWaitPlayers(game.teams);
+          saveSession();
+          showScreen('wait');
+          fbListen(gameCode, onGameData);
+          return;
+        }
+      }
+    }
+    // Nog geen (geldig) spel aangemaakt met deze code — door naar setup binnen het verloopvenster
+    redeemCode = code;
+    showSetup();
+    return;
+  }
+
+  // ── Code is nog ongebruikt: verzilver nu, start de 72-uurs klok ──────────────
+  try {
+    await fbPatchPath(`redeemCodes/${code}`, { status: 'redeemed', redeemedAt: now, expiresAt: now + VALIDITY_MS, gameCode: null });
+  } catch {
+    showRedeemErr('Verbinding mislukt. Probeer opnieuw.');
+    return;
+  }
+
+  redeemCode = code;
+  showSetup();
+}
+
+// ── Adminpaneel (alleen na masterscode) ──────────────────────────────────────────
+
+async function adminGenerateCodes() {
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  const codes = Array.from({ length: 10 }, () =>
+    'LB-' + Array.from({ length: 8 }, () => chars[Math.floor(Math.random() * chars.length)]).join('')
+  );
+  for (const c of codes) {
+    await fbSetPath(`redeemCodes/${c}`, { status: 'unused', redeemedAt: null, expiresAt: null, gameCode: null });
+  }
+  await renderAdminCodes();
+}
+
+async function renderAdminCodes() {
+  const all  = (await fbGetPath('redeemCodes')) || {};
+  const rows = Object.entries(all).sort((a, b) => b[0].localeCompare(a[0]));
+  document.getElementById('adminCodeList').innerHTML = rows.length
+    ? rows.map(([code, d]) => {
+        const expired = d.status === 'redeemed' && d.expiresAt && d.expiresAt < Date.now();
+        const status  = d.status === 'redeemed' ? (expired ? 'verlopen' : 'actief (72u)') : 'ongebruikt';
+        const color   = d.status === 'redeemed' ? (expired ? '#e07070' : '#4a9970') : 'var(--muted)';
+        return `<div style="display:flex;justify-content:space-between;gap:8px;padding:5px 0;border-bottom:1px solid var(--bdr);font-size:12px">
+                  <span style="font-family:'Orbitron',monospace">${code}</span>
+                  <span style="color:${color}">${status}</span>
+                </div>`;
+      }).join('')
+    : '<div style="color:var(--muted);font-size:12px">Nog geen codes. Klik op "Genereer 10 codes".</div>';
 }
 
 function showJoinScreen() {
@@ -404,6 +534,32 @@ async function fbGet(code) {
     const r = await fetch(`${DB_URL}/games/${code}.json`);
     return r.json();
   } catch { return null; }
+}
+
+// Generieke helpers voor andere paden dan /games (bv. /redeemCodes)
+async function fbGetPath(path) {
+  try {
+    const r = await fetch(`${DB_URL}/${path}.json`);
+    return r.json();
+  } catch { return null; }
+}
+
+async function fbSetPath(path, data) {
+  const res = await fetch(`${DB_URL}/${path}.json`, {
+    method:  'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body:    JSON.stringify(data),
+  });
+  if (!res.ok) throw new Error(`Firebase fout: ${res.status} ${res.statusText}`);
+}
+
+async function fbPatchPath(path, data) {
+  const res = await fetch(`${DB_URL}/${path}.json`, {
+    method:  'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body:    JSON.stringify(data),
+  });
+  if (!res.ok) throw new Error(`Firebase fout: ${res.status} ${res.statusText}`);
 }
 
 function fbListen(code, cb) {
@@ -626,11 +782,36 @@ async function createGame() {
   }
 
   // ── Multiplayer via Firebase ───────────────────────────────────────────────
-  gameCode = generateCode();
   isHost   = true;
 
   btn.textContent = 'SPEL AANMAKEN...';
   btn.disabled    = true;
+
+  // Eigen lobbycode (optioneel)
+  const customRaw = document.getElementById('customCode')?.value.trim().toUpperCase().replace(/[^A-Z0-9]/g, '') || '';
+  if (customRaw) {
+    if (customRaw.length < 4 || customRaw.length > 10) {
+      btn.innerHTML = btnOrig; btn.disabled = false;
+      const err = document.getElementById('serr');
+      err.style.display = 'block';
+      err.textContent   = 'Eigen lobbycode moet 4 tot 10 tekens zijn (letters/cijfers).';
+      return;
+    }
+    const existing = await fbGet(customRaw);
+    const taken = existing && existing.status !== 'over' && (!existing.expiresAt || existing.expiresAt > Date.now());
+    if (taken) {
+      btn.innerHTML = btnOrig; btn.disabled = false;
+      const err = document.getElementById('serr');
+      err.style.display = 'block';
+      err.textContent   = 'Deze lobbycode is al in gebruik. Kies een andere.';
+      return;
+    }
+    gameCode = customRaw;
+  } else {
+    gameCode = generateCode();
+  }
+
+  const expiresAt = Date.now() + VALIDITY_MS;
 
   try {
     await fbSet(gameCode, {
@@ -643,7 +824,10 @@ async function createGame() {
       teams:     players.map(p => ({ name: p.name, color: p.color, score: 0, members: [] })),
       winner:    -1,
       winReason: '',
+      expiresAt,
+      redemptionCode: redeemCode || null,
     });
+    if (redeemCode) await fbPatchPath(`redeemCodes/${redeemCode}`, { gameCode });
   } catch (e) {
     btn.innerHTML = btnOrig;
     btn.disabled  = false;
@@ -680,6 +864,7 @@ async function searchGame() {
   document.getElementById('joinSearchBtn').textContent = 'OPNIEUW ZOEKEN';
 
   if (!data)                    { showJoinErr('Spel niet gevonden. Controleer de code.'); return; }
+  if (data.expiresAt && data.expiresAt < Date.now()) { showJoinErr('Dit spel is verlopen (72 uur verstreken).'); return; }
   if (data.status === 'playing'){ showJoinErr('Dit spel is al begonnen.'); return; }
   if (data.status === 'over')   { showJoinErr('Dit spel is afgelopen.'); return; }
 
@@ -1307,6 +1492,7 @@ async function restoreSession() {
 
     const data = await fbGet(saved.gameCode);
     if (!data || data.status === 'over') { clearSession(); return false; }
+    if (data.expiresAt && data.expiresAt < Date.now()) { clearSession(); return false; }
 
     gameCode  = saved.gameCode;
     myTeamIdx = saved.myTeamIdx ?? -1;
