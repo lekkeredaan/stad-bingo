@@ -790,11 +790,11 @@ async function createGame() {
   // Eigen lobbycode (optioneel)
   const customRaw = document.getElementById('customCode')?.value.trim().toUpperCase().replace(/[^A-Z0-9]/g, '') || '';
   if (customRaw) {
-    if (customRaw.length < 4 || customRaw.length > 10) {
+    if (customRaw.length !== 6) {
       btn.innerHTML = btnOrig; btn.disabled = false;
       const err = document.getElementById('serr');
       err.style.display = 'block';
-      err.textContent   = 'Eigen lobbycode moet 4 tot 10 tekens zijn (letters/cijfers).';
+      err.textContent   = 'Eigen lobbycode moet precies 6 tekens zijn (letters/cijfers).';
       return;
     }
     const existing = await fbGet(customRaw);
