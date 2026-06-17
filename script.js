@@ -960,7 +960,7 @@ function renderWaitPlayers(teams) {
     return `<div class="pr" style="border-color:${c.m}55">
               <div class="cd" style="background:${c.m}"></div>
               <div>
-                <div style="font-weight:600;color:${c.l};font-size:14px">${t.name}</div>
+                <div style="font-weight:700;color:var(--txt);font-size:14px">${t.name}</div>
                 <div style="font-size:12px;color:var(--muted)">${members}</div>
               </div>
             </div>`;
