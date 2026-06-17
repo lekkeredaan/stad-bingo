@@ -1,5 +1,14 @@
 {
   "functions": {
     "api/upload.js": { "maxDuration": 30 }
-  }
+  },
+  "redirects": [
+    { "source": "/:path*", "has": [{ "type": "host", "value": "www.lockoutbingo.nl" }],   "destination": "https://lockoutbingo.nl/:path*", "permanent": true },
+    { "source": "/:path*", "has": [{ "type": "host", "value": "lockout-bingo.nl" }],       "destination": "https://lockoutbingo.nl/:path*", "permanent": true },
+    { "source": "/:path*", "has": [{ "type": "host", "value": "lockout-bingo.online" }],   "destination": "https://lockoutbingo.nl/:path*", "permanent": true },
+    { "source": "/:path*", "has": [{ "type": "host", "value": "lockoutbingo.online" }],    "destination": "https://lockoutbingo.nl/:path*", "permanent": true },
+    { "source": "/:path*", "has": [{ "type": "host", "value": "stad-bingo.nl" }],          "destination": "https://lockoutbingo.nl/:path*", "permanent": true },
+    { "source": "/:path*", "has": [{ "type": "host", "value": "stadbingo.nl" }],           "destination": "https://lockoutbingo.nl/:path*", "permanent": true },
+    { "source": "/:path*", "has": [{ "type": "host", "value": "stadbingo.online" }],       "destination": "https://lockoutbingo.nl/:path*", "permanent": true }
+  ]
 }
