@@ -562,6 +562,22 @@ async function fbPatchPath(path, data) {
   if (!res.ok) throw new Error(`Firebase fout: ${res.status} ${res.statusText}`);
 }
 
+// Upload een base64-foto naar Cloudinary via de serverless functie; geeft een URL terug.
+async function uploadPhoto(dataUrl) {
+  const m = /^data:(image\/[a-zA-Z0-9.+-]+);base64,(.*)$/.exec(dataUrl || '');
+  if (!m) return null;
+  try {
+    const res = await fetch('/api/upload', {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body:    JSON.stringify({ data: m[2], mediaType: m[1], folder: 'lockout-bingo' }),
+    });
+    if (!res.ok) return null;
+    const j = await res.json();
+    return j.url || null;
+  } catch { return null; }
+}
+
 function fbListen(code, cb) {
   stopListening();
   gameStream = new EventSource(`${DB_URL}/games/${code}.json`);
@@ -1041,7 +1057,7 @@ function onGameData(data) {
       gs = {
         mode:    data.mode,
         sz:      data.sz,
-        cells:   data.cells.map(c => ({ ...c, photo: null })),
+        cells:   data.cells.map(c => ({ ...c, photo: c.photo || null })),
         players: data.teams,
         turn:    data.turn,
         over:    data.over || data.status === 'over',
@@ -1055,7 +1071,7 @@ function onGameData(data) {
 
     } else if (screen === 'game' && gs) {
       const wasOver = gs.over;
-      gs.cells   = data.cells.map((c, i) => ({ ...c, photo: gs.cells[i]?.photo || null }));
+      gs.cells   = data.cells.map((c, i) => ({ ...c, photo: c.photo || gs.cells[i]?.photo || null }));
       gs.players = data.teams;
       gs.turn    = data.turn;
       gs.over    = data.over || data.status === 'over';
@@ -1075,7 +1091,7 @@ function onGameData(data) {
 async function syncGameState(opts = {}) {
   if (!gameCode) return;
   await fbPatch(gameCode, {
-    cells:     gs.cells.map(c => ({ text: c.text, free: c.free, claimed: c.claimed, wc: c.wc })),
+    cells:     gs.cells.map(c => ({ text: c.text, free: c.free, claimed: c.claimed, wc: c.wc, photo: (c.photo && c.photo.startsWith('http')) ? c.photo : null })),
     teams:     gs.players.map(p => ({ name: p.name, color: p.color, score: p.score, members: p.members || [] })),
     turn:      gs.turn,
     over:      gs.over,
@@ -1282,13 +1298,26 @@ async function confirmClaim() {
     return;
   }
 
+  const confBtn   = document.getElementById('pconf');
+  const claimHtml = '<svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-right:4px"><path d="M2.5 7l3.5 3.5L12 4"/></svg>Claim!';
+  const photoData = document.getElementById('pprev').src;
+
+  // ── Foto uploaden naar Cloudinary (gedeeld) — anders lokale base64-fallback ──
+  let photoUrl = null;
+  if (photoData?.startsWith('data:')) {
+    confBtn.textContent = 'Uploaden...';
+    confBtn.disabled = true;
+    photoUrl = await uploadPhoto(photoData);
+    confBtn.innerHTML = claimHtml;
+    confBtn.disabled = false;
+  }
+
   // ── Race condition guard: verify cell is still unclaimed on the server ──────
   if (gameCode) {
-    const confBtn = document.getElementById('pconf');
     confBtn.textContent = '...';
     confBtn.disabled = true;
     const latest = await fbGet(gameCode);
-    confBtn.innerHTML = '<svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-right:4px"><path d="M2.5 7l3.5 3.5L12 4"/></svg>Claim!';
+    confBtn.innerHTML = claimHtml;
     confBtn.disabled = false;
     if (latest?.cells?.[i]?.claimed) {
       closeClaimModal();
@@ -1304,10 +1333,10 @@ async function confirmClaim() {
   cell.claimed = pn;
   player.score++;
 
-  const photoData = document.getElementById('pprev').src;
-  if (photoData?.startsWith('data:')) {
-    cell.photo = photoData;
-    photos[i]  = { photo: photoData, task: cell.text, player: player.name, color: COLS[player.color].m };
+  // Bewaar gedeelde URL, of base64 als lokale fallback (upload mislukt / lokale modus)
+  cell.photo = photoUrl || (photoData?.startsWith('data:') ? photoData : null);
+  if (cell.photo) {
+    photos[i] = { photo: cell.photo, task: cell.text, player: player.name, color: COLS[player.color].m };
   }
 
   closeClaimModal();
@@ -1443,16 +1472,35 @@ function toggleGallery() {
   renderGallery();
 }
 
+// Vanaf het win-scherm: sluit de overlay en toon de galerij op het spelbord.
+function showGalleryFromWin() {
+  document.getElementById('wov').classList.remove('show');
+  const g = document.getElementById('gal');
+  g.style.display = 'block';
+  renderGallery();
+  g.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
 function renderGallery() {
   const grid = document.getElementById('gg');
-  const ph   = Object.values(photos);
-  if (!ph.length) {
+  const shots = (gs?.cells || [])
+    .filter(c => c.photo && c.claimed)
+    .map(c => {
+      const player = gs.players[c.claimed - 1];
+      return {
+        photo:  c.photo,
+        task:   c.text,
+        player: player ? player.name : '',
+        color:  player ? COLS[player.color].m : 'var(--muted)',
+      };
+    });
+  if (!shots.length) {
     grid.innerHTML = '<div style="color:var(--muted);font-size:11px;padding:7px">Nog geen foto\'s gemaakt.</div>';
     return;
   }
-  grid.innerHTML = ph.map(p =>
+  grid.innerHTML = shots.map(p =>
     `<div class="gi">
-       <img src="${p.photo}" alt="foto">
+       <img src="${p.photo}" alt="foto" loading="lazy">
        <div class="gl" style="color:${p.color}">${p.player}</div>
        <div class="gl">${p.task.substring(0, 38)}</div>
      </div>`
@@ -1519,7 +1567,7 @@ async function restoreSession() {
       gs = {
         mode:    data.mode,
         sz:      data.sz,
-        cells:   data.cells.map(c => ({ ...c, photo: null })),
+        cells:   data.cells.map(c => ({ ...c, photo: c.photo || null })),
         players: data.teams,
         turn:    data.turn,
         over:    false,

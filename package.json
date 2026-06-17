@@ -1,0 +1,12 @@
+{
+  "name": "lockout-bingo",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Lockout-Bingo — locatie-bingo met foto-bewijs, gedeelde galerij en AI-rechter.",
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "cloudinary": "^2.10.0"
+  }
+}
