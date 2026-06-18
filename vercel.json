@@ -1,6 +1,7 @@
 {
   "functions": {
-    "api/upload.js": { "maxDuration": 30 }
+    "api/upload.js": { "maxDuration": 30 },
+    "api/judge.js": { "maxDuration": 30 }
   },
   "redirects": [
     { "source": "/:path*", "has": [{ "type": "host", "value": "www.lockoutbingo.nl" }],   "destination": "https://lockoutbingo.nl/:path*", "permanent": true },

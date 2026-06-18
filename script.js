@@ -578,6 +578,19 @@ async function uploadPhoto(dataUrl) {
   } catch { return null; }
 }
 
+// Laat De Rechter (Claude vision) de foto beoordelen; geeft {approved, score, comment} terug.
+async function judgePhoto(task, imageUrl) {
+  try {
+    const res = await fetch('/api/judge', {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body:    JSON.stringify({ task, imageUrl }),
+    });
+    if (!res.ok) return null;
+    return await res.json();
+  } catch { return null; }
+}
+
 function fbListen(code, cb) {
   stopListening();
   gameStream = new EventSource(`${DB_URL}/games/${code}.json`);
@@ -776,6 +789,7 @@ async function createGame() {
   }
 
   const tm = getTimerMinutes();
+  const judgeMode = document.getElementById('judgeSel')?.value || 'off';
 
   // ── Lokale modus (geen Firebase) ──────────────────────────────────────────
   if (LOCAL_MODE) {
@@ -783,6 +797,7 @@ async function createGame() {
     gameCode = null;
     isHost   = false;
     gs = {
+      judge: judgeMode,
       mode, sz,
       cells:   cells.map(c => ({ ...c, photo: null })),
       players: players.map(p => ({ name: p.name, color: p.color, score: 0, members: [] })),
@@ -832,6 +847,7 @@ async function createGame() {
   try {
     await fbSet(gameCode, {
       mode, sz, tm,
+      judge:     judgeMode,
       status:    'lobby',
       over:      false,
       turn:      0,
@@ -1055,6 +1071,7 @@ function onGameData(data) {
       photos = {};
       const tm = data.tm || 0;
       gs = {
+        judge:   data.judge || 'off',
         mode:    data.mode,
         sz:      data.sz,
         cells:   data.cells.map(c => ({ ...c, photo: c.photo || null })),
@@ -1091,7 +1108,7 @@ function onGameData(data) {
 async function syncGameState(opts = {}) {
   if (!gameCode) return;
   await fbPatch(gameCode, {
-    cells:     gs.cells.map(c => ({ text: c.text, free: c.free, claimed: c.claimed, wc: c.wc, photo: (c.photo && c.photo.startsWith('http')) ? c.photo : null })),
+    cells:     gs.cells.map(c => ({ text: c.text, free: c.free, claimed: c.claimed, wc: c.wc, photo: (c.photo && c.photo.startsWith('http')) ? c.photo : null, verdict: c.verdict || null })),
     teams:     gs.players.map(p => ({ name: p.name, color: p.color, score: p.score, members: p.members || [] })),
     turn:      gs.turn,
     over:      gs.over,
@@ -1220,6 +1237,7 @@ function clickCell(i) {
   document.getElementById('pconf').style.display  = 'none';
   document.getElementById('pshoot').style.display = 'none';
   document.getElementById('pfile').value          = '';
+  document.getElementById('pverdict').style.display = 'none';
 
   if (myTeamIdx >= 0) {
     // Player is on a specific team — skip selector, go straight to photo
@@ -1269,12 +1287,30 @@ function selectClaimTeam(idx) {
 
 function closeClaimModal() {
   document.getElementById('pmod').classList.remove('show');
+  document.getElementById('pverdict').style.display = 'none';
   pci            = -1;
   pendingTeamIdx = -1;
 }
 
+// Toon het oordeel van De Rechter in de claim-modal.
+// rejected=true → rode afkeuring (blokkerend); de speler kan een andere foto kiezen.
+function showVerdict(verdict, rejected) {
+  const el = document.getElementById('pverdict');
+  const ok = !rejected;
+  const bg = ok ? 'var(--grn-surf)' : 'var(--red-surf)';
+  const bd = ok ? 'var(--grn-bdr)'  : 'var(--red-bdr)';
+  const tc = ok ? '#257a4a'         : '#b23b27';
+  const title = rejected ? 'Afgekeurd door De Rechter' : `De Rechter: ${verdict.score}/10`;
+  el.style.cssText = `display:block;margin:10px 0;padding:11px 13px;border-radius:10px;text-align:left;background:${bg};border:1px solid ${bd}`;
+  el.innerHTML =
+    `<div style="font-family:'Orbitron',monospace;font-size:10px;letter-spacing:0.08em;color:${tc};margin-bottom:5px">${title}</div>` +
+    `<div style="font-size:13px;color:var(--txt);line-height:1.45">${(verdict.comment || '').replace(/</g,'&lt;')}</div>` +
+    (rejected ? `<div style="font-size:12px;color:var(--muted);margin-top:7px">Kies een andere foto en probeer opnieuw, of annuleer.</div>` : '');
+}
+
 document.getElementById('pfile').addEventListener('change', function () {
   if (!this.files || !this.files[0]) return;
+  document.getElementById('pverdict').style.display = 'none';
   const reader = new FileReader();
   reader.onload = e => {
     const prev = document.getElementById('pprev');
@@ -1312,6 +1348,22 @@ async function confirmClaim() {
     confBtn.disabled = false;
   }
 
+  // ── De Rechter beoordeelt de foto (indien ingeschakeld) ─────────────────────
+  let verdict = null;
+  if (gs.judge && gs.judge !== 'off' && photoUrl) {
+    confBtn.textContent = 'Rechter beoordeelt...';
+    confBtn.disabled = true;
+    verdict = await judgePhoto(gs.cells[i].text, photoUrl);
+    confBtn.innerHTML = claimHtml;
+    confBtn.disabled = false;
+
+    // Blokkerend + afgekeurd → claim telt niet; toon oordeel, laat modal open
+    if (gs.judge === 'blocking' && verdict && verdict.approved === false) {
+      showVerdict(verdict, true);
+      return;
+    }
+  }
+
   // ── Race condition guard: verify cell is still unclaimed on the server ──────
   if (gameCode) {
     confBtn.textContent = '...';
@@ -1335,6 +1387,7 @@ async function confirmClaim() {
 
   // Bewaar gedeelde URL, of base64 als lokale fallback (upload mislukt / lokale modus)
   cell.photo = photoUrl || (photoData?.startsWith('data:') ? photoData : null);
+  if (verdict) cell.verdict = { score: verdict.score, comment: verdict.comment, approved: verdict.approved !== false };
   if (cell.photo) {
     photos[i] = { photo: cell.photo, task: cell.text, player: player.name, color: COLS[player.color].m };
   }
@@ -1488,10 +1541,11 @@ function renderGallery() {
     .map(c => {
       const player = gs.players[c.claimed - 1];
       return {
-        photo:  c.photo,
-        task:   c.text,
-        player: player ? player.name : '',
-        color:  player ? COLS[player.color].m : 'var(--muted)',
+        photo:   c.photo,
+        task:    c.text,
+        player:  player ? player.name : '',
+        color:   player ? COLS[player.color].m : 'var(--muted)',
+        verdict: c.verdict || null,
       };
     });
   if (!shots.length) {
@@ -1503,6 +1557,7 @@ function renderGallery() {
        <img src="${p.photo}" alt="foto" loading="lazy">
        <div class="gl" style="color:${p.color}">${p.player}</div>
        <div class="gl">${p.task.substring(0, 38)}</div>
+       ${p.verdict ? `<div class="gl" style="color:var(--acc)">★ ${p.verdict.score}/10 — ${(p.verdict.comment || '').substring(0, 60)}</div>` : ''}
      </div>`
   ).join('');
 }
@@ -1565,6 +1620,7 @@ async function restoreSession() {
       photos = {};
       const tm = data.tm || 0;
       gs = {
+        judge:   data.judge || 'off',
         mode:    data.mode,
         sz:      data.sz,
         cells:   data.cells.map(c => ({ ...c, photo: c.photo || null })),

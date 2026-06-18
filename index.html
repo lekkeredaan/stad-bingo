@@ -106,6 +106,17 @@
         <input type="text" id="customCode" placeholder="bv. PARTY1" maxlength="6"
                style="text-transform:uppercase;width:120px;font-family:'Orbitron',monospace;letter-spacing:2px">
       </div>
+      <div class="row" style="margin-top:14px">
+        <span class="settings-label">AI-rechter:</span>
+        <select id="judgeSel" style="width:auto">
+          <option value="off" selected>Uit</option>
+          <option value="advisory">Adviserend (geeft cijfer + commentaar)</option>
+          <option value="blocking">Blokkerend (moet goedkeuren)</option>
+        </select>
+      </div>
+      <div style="font-size:11px;color:var(--muted);margin-top:6px;line-height:1.45">
+        De Rechter beoordeelt elke foto met AI. <strong>Adviserend</strong>: claim telt altijd, met cijfer + commentaar. <strong>Blokkerend</strong>: de foto moet worden goedgekeurd voordat de claim telt.
+      </div>
     </div>
 
     <div class="card">
@@ -216,6 +227,7 @@
     <div class="tt" id="ptxt"></div>
     <div id="pins"></div>
     <img id="pprev" src="" alt="Foto preview voor de opdracht">
+    <div id="pverdict" style="display:none"></div>
     <input type="file" id="pfile" accept="image/*" capture="environment">
     <div class="pbr">
       <button class="btn bg2" onclick="closeClaimModal()">Annuleer</button>
