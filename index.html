@@ -307,10 +307,27 @@
     <div class="wr" id="wreason"></div>
     <div class="pod" id="pod"></div>
     <div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap">
+      <button class="btn bgn" onclick="openAftermovie()">
+        <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-right:5px"><rect x="1" y="3" width="12" height="8" rx="1.6"/><path d="M5.5 5.5l3 1.5-3 1.5z" fill="currentColor" stroke="none"/></svg>AFTERMOVIE
+      </button>
       <button class="btn bg2" onclick="showGalleryFromWin()">
         <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-right:5px"><rect x="1" y="4" width="10" height="8" rx="1.8"/><circle cx="6" cy="8" r="2"/><path d="M4 4l.8-1.8h2.4L8 4"/><path d="M11 5h1.5a1 1 0 0 1 1 1v5a1 1 0 0 1-1 1H11"/></svg>FOTO-GALERIJ
       </button>
       <button class="btn bp" onclick="resetGame()">NIEUW SPEL</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── Aftermovie overlay ── -->
+<div id="mov" role="dialog" aria-modal="true">
+  <div id="movbox">
+    <canvas id="movcv" width="720" height="1280"></canvas>
+    <div id="movloading">De aftermovie wordt gemaakt…</div>
+    <div id="movctrls">
+      <button class="btn bg2" id="movPlay" onclick="aftermovieToggle()" aria-label="Afspelen/pauzeren">❚❚</button>
+      <button class="btn bg2" id="movMute" onclick="aftermovieMute()" aria-label="Geluid aan/uit">♪</button>
+      <button class="btn bgn" id="movDl" onclick="aftermovieDownload()">Download</button>
+      <button class="btn br"  onclick="closeAftermovie()" aria-label="Sluiten">✕</button>
     </div>
   </div>
 </div>

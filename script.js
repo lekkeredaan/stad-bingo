@@ -1562,6 +1562,325 @@ function renderGallery() {
   ).join('');
 }
 
+// ── Aftermovie ────────────────────────────────────────────────────────────────
+// Filmische slideshow op canvas: Ken Burns + fades + onderschriften + muziek.
+
+const AM_CARD = 3000, AM_PHOTO = 3300, AM_FADE = 550;
+let am = null;   // actieve aftermovie-state
+
+function loadImg(url) {
+  return new Promise(res => {
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    img.onload  = () => res(img);
+    img.onerror = () => res(null);
+    img.src = url;
+  });
+}
+
+async function openAftermovie() {
+  if (!gs) return;
+  const ov = document.getElementById('mov');
+  ov.classList.add('show');
+  document.getElementById('wov').classList.remove('show');
+  document.getElementById('movloading').style.display = 'block';
+
+  // Verzamel foto-scenes
+  const shots = gs.cells
+    .filter(c => c.photo && c.claimed)
+    .map(c => {
+      const p = gs.players[c.claimed - 1];
+      return { url: c.photo, team: p ? p.name : '', color: p ? COLS[p.color].m : '#e8820a', task: c.text, verdict: c.verdict || null };
+    });
+
+  const modeName = (MODES.find(m => m.id === gs.mode) || {}).name || '';
+  const ranked = [...gs.players.map((p, i) => ({ ...p, i }))].sort((a, b) => b.score - a.score);
+  const winner = ranked.length && (ranked.length === 1 || ranked[0].score > ranked[1].score) ? ranked[0] : null;
+
+  // AI-titelteksten (optioneel — valt terug op standaard)
+  let intro = 'De avond in beeld', outro = 'Tot de volgende ronde!';
+  try {
+    const res = await fetch('/api/recap', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ mode: modeName, teams: ranked.map(p => ({ name: p.name, score: p.score })), winner: winner ? winner.name : null, photoCount: shots.length }),
+    });
+    if (res.ok) { const r = await res.json(); if (r.intro) intro = r.intro; if (r.outro) outro = r.outro; }
+  } catch {}
+
+  // Foto's voorladen + lettertype gereed
+  const imgs = await Promise.all(shots.map(s => loadImg(s.url)));
+  shots.forEach((s, i) => s.img = imgs[i]);
+  try { await document.fonts.ready; } catch {}
+
+  // Scenes opbouwen
+  const scenes = [{ type: 'card', title: 'LOCKOUT BINGO', sub: intro, accent: '#e8820a' }];
+  shots.forEach(s => { if (s.img) scenes.push({ type: 'photo', ...s }); });
+  scenes.push({
+    type: 'card',
+    title: winner ? winner.name + ' wint!' : 'Gelijkspel!',
+    sub: outro,
+    accent: winner ? COLS[winner.color].m : '#ffcc00',
+    scores: ranked.slice(0, 6).map(p => ({ name: p.name, score: p.score, color: COLS[p.color].m })),
+  });
+
+  am = { scenes, playing: true, mute: false, raf: null, t0: performance.now(), frozen: null, audio: null, recorder: null, recordOnEnd: false };
+  document.getElementById('movloading').style.display = 'none';
+  document.getElementById('movPlay').textContent = '❚❚';
+  startAmAudio();
+  amLoop();
+}
+
+function amTotal() { return am.scenes.reduce((s, sc) => s + (sc.type === 'photo' ? AM_PHOTO : AM_CARD), 0); }
+
+function amLoop() {
+  if (!am) return;
+  const cv = document.getElementById('movcv');
+  const ctx = cv.getContext('2d');
+  const W = cv.width, H = cv.height;
+  const elapsed = am.frozen != null ? am.frozen : (performance.now() - am.t0);
+
+  // Bepaal huidige scene + voortgang
+  let acc = 0, idx = am.scenes.length - 1, prog = 1, done = true;
+  for (let i = 0; i < am.scenes.length; i++) {
+    const d = am.scenes[i].type === 'photo' ? AM_PHOTO : AM_CARD;
+    if (elapsed < acc + d) { idx = i; prog = (elapsed - acc) / d; done = false; break; }
+    acc += d;
+  }
+
+  ctx.fillStyle = '#0e0d0b';
+  ctx.fillRect(0, 0, W, H);
+  const sc = am.scenes[idx];
+  if (sc.type === 'photo') amDrawPhoto(ctx, W, H, sc, prog, idx);
+  else                     amDrawCard(ctx, W, H, sc, prog);
+
+  // Fade in/uit (dip-to-black) per scene
+  const dur = sc.type === 'photo' ? AM_PHOTO : AM_CARD;
+  const fr = AM_FADE / dur;
+  let fade = 0;
+  if (prog < fr) fade = 1 - prog / fr;
+  else if (prog > 1 - fr) fade = (prog - (1 - fr)) / fr;
+  if (fade > 0) { ctx.fillStyle = `rgba(14,13,11,${fade})`; ctx.fillRect(0, 0, W, H); }
+
+  if (done) { amEnd(); return; }
+  if (am.playing) am.raf = requestAnimationFrame(amLoop);
+}
+
+function amDrawCover(ctx, img, W, H, scale, panX, panY) {
+  const ir = img.width / img.height, cr = W / H;
+  let dw, dh;
+  if (ir > cr) { dh = H * scale; dw = dh * ir; } else { dw = W * scale; dh = dw / ir; }
+  ctx.drawImage(img, (W - dw) / 2 + panX, (H - dh) / 2 + panY, dw, dh);
+}
+
+function amDrawPhoto(ctx, W, H, sc, prog, idx) {
+  const scale = 1.06 + 0.16 * prog;            // langzaam inzoomen
+  const dir = idx % 2 ? -1 : 1;                // afwisselend pannen
+  amDrawCover(ctx, sc.img, W, H, scale, dir * (prog - 0.5) * 60, (prog - 0.5) * 40);
+
+  // Onderste verloop voor leesbaarheid
+  const grad = ctx.createLinearGradient(0, H * 0.55, 0, H);
+  grad.addColorStop(0, 'rgba(0,0,0,0)');
+  grad.addColorStop(1, 'rgba(0,0,0,0.82)');
+  ctx.fillStyle = grad;
+  ctx.fillRect(0, H * 0.55, W, H * 0.45);
+
+  ctx.textAlign = 'left';
+  // Teamnaam
+  ctx.fillStyle = sc.color;
+  ctx.font = "700 40px Orbitron, monospace";
+  ctx.fillText(sc.team.toUpperCase().slice(0, 22), 60, H - 230);
+  // Opdracht
+  ctx.fillStyle = '#fff';
+  ctx.font = "500 42px 'DM Sans', sans-serif";
+  amWrap(ctx, sc.task, 60, H - 170, W - 120, 50, 2);
+  // Rechter-cijfer
+  if (sc.verdict) {
+    ctx.fillStyle = '#ffd055';
+    ctx.font = "700 34px Orbitron, monospace";
+    ctx.fillText('★ ' + sc.verdict.score + '/10', 60, H - 70);
+  }
+}
+
+function amDrawCard(ctx, W, H, sc, prog) {
+  const g = ctx.createLinearGradient(0, 0, 0, H);
+  g.addColorStop(0, sc.accent + '33');
+  g.addColorStop(0.5, '#0e0d0b');
+  g.addColorStop(1, '#0e0d0b');
+  ctx.fillStyle = g;
+  ctx.fillRect(0, 0, W, H);
+
+  ctx.textAlign = 'center';
+  ctx.fillStyle = sc.accent;
+  ctx.font = "900 68px Orbitron, monospace";
+  amWrap(ctx, sc.title, W / 2, H * 0.32, W - 100, 78, 2);
+
+  ctx.fillStyle = '#ede8df';
+  ctx.font = "400 34px 'DM Sans', sans-serif";
+  amWrap(ctx, sc.sub, W / 2, H * 0.46, W - 140, 44, 3);
+
+  if (sc.scores) {
+    let y = H * 0.6;
+    sc.scores.forEach((p, i) => {
+      ctx.fillStyle = p.color;
+      ctx.font = "700 30px Orbitron, monospace";
+      ctx.textAlign = 'center';
+      ctx.fillText(`${p.name}  —  ${p.score}`, W / 2, y);
+      y += 52;
+    });
+  }
+  ctx.textAlign = 'left';
+}
+
+function amWrap(ctx, text, x, y, maxW, lh, maxLines) {
+  const words = String(text || '').split(' ');
+  const lines = [];
+  let line = '';
+  for (const w of words) {
+    const test = line ? line + ' ' + w : w;
+    if (ctx.measureText(test).width > maxW && line) { lines.push(line); line = w; }
+    else line = test;
+  }
+  if (line) lines.push(line);
+  const shown = lines.slice(0, maxLines);
+  if (lines.length > maxLines) shown[maxLines - 1] += '…';
+  const center = ctx.textAlign === 'center';
+  shown.forEach((l, i) => ctx.fillText(l, x, y + i * lh));
+}
+
+function startAmAudio() {
+  try {
+    const AC = window.AudioContext || window.webkitAudioContext;
+    const ac = new AC();
+    const master = ac.createGain();
+    master.gain.value = am.mute ? 0 : 0.16;
+    master.connect(ac.destination);
+    const dest = ac.createMediaStreamDestination();
+    master.connect(dest);
+    am.audio = { ac, master, dest, timer: null };
+
+    const chords = [[261.63, 329.63, 392.00], [293.66, 369.99, 440.00], [220.00, 277.18, 329.63], [246.94, 311.13, 392.00]];
+    let step = 0;
+    const playStep = () => {
+      if (!am || !am.audio) return;
+      const chord = chords[step % chords.length];
+      chord.forEach((f, i) => {
+        const o = ac.createOscillator(); o.type = 'triangle'; o.frequency.value = f;
+        const g = ac.createGain(); g.gain.value = 0;
+        o.connect(g); g.connect(master);
+        const t = ac.currentTime + i * 0.11;
+        g.gain.setValueAtTime(0, t);
+        g.gain.linearRampToValueAtTime(0.28, t + 0.05);
+        g.gain.exponentialRampToValueAtTime(0.001, t + 1.0);
+        o.start(t); o.stop(t + 1.1);
+      });
+      step++;
+    };
+    if (ac.state === 'suspended') ac.resume();
+    playStep();
+    am.audio.timer = setInterval(playStep, 1400);
+  } catch {}
+}
+
+function stopAmAudio() {
+  if (am?.audio) {
+    clearInterval(am.audio.timer);
+    try { am.audio.ac.close(); } catch {}
+    am.audio = null;
+  }
+}
+
+function aftermovieToggle() {
+  if (!am) return;
+  const btn = document.getElementById('movPlay');
+  if (am.playing) {
+    am.frozen = performance.now() - am.t0;
+    am.playing = false;
+    if (am.raf) cancelAnimationFrame(am.raf);
+    if (am.audio) am.audio.master.gain.value = 0;
+    btn.textContent = '►';
+  } else {
+    // Hervatten (of opnieuw afspelen als hij aan het eind stond)
+    if (am.frozen != null && am.frozen >= amTotal()) am.frozen = 0;
+    am.t0 = performance.now() - (am.frozen || 0);
+    am.frozen = null;
+    am.playing = true;
+    if (am.audio) am.audio.master.gain.value = am.mute ? 0 : 0.16;
+    btn.textContent = '❚❚';
+    amLoop();
+  }
+}
+
+function aftermovieMute() {
+  if (!am) return;
+  am.mute = !am.mute;
+  if (am.audio) am.audio.master.gain.value = (am.mute || !am.playing) ? 0 : 0.16;
+  document.getElementById('movMute').style.opacity = am.mute ? '0.4' : '1';
+}
+
+function amEnd() {
+  am.playing = false;
+  am.frozen = amTotal();
+  document.getElementById('movPlay').textContent = '►';
+  if (am.audio) am.audio.master.gain.value = 0;
+  if (am.recordOnEnd && am.recorder && am.recorder.state !== 'inactive') {
+    am.recorder.stop();
+    am.recordOnEnd = false;
+  }
+}
+
+function aftermovieDownload() {
+  if (!am) return;
+  try {
+    const cv = document.getElementById('movcv');
+    if (!cv.captureStream || typeof MediaRecorder === 'undefined') {
+      alert('Video-download wordt niet ondersteund in deze browser. De aftermovie speelt wel gewoon af.');
+      return;
+    }
+    const stream = cv.captureStream(30);
+    if (am.audio?.dest) am.audio.dest.stream.getAudioTracks().forEach(t => stream.addTrack(t));
+    const mime = MediaRecorder.isTypeSupported('video/webm;codecs=vp9') ? 'video/webm;codecs=vp9'
+              : MediaRecorder.isTypeSupported('video/webm') ? 'video/webm' : '';
+    if (!mime) { alert('Video-download wordt niet ondersteund in deze browser. De aftermovie speelt wel gewoon af.'); return; }
+
+    const rec = new MediaRecorder(stream, { mimeType: mime });
+    const chunks = [];
+    rec.ondataavailable = e => { if (e.data.size) chunks.push(e.data); };
+    rec.onstop = () => {
+      const blob = new Blob(chunks, { type: mime });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = 'lockout-bingo-aftermovie.webm';
+      a.click();
+      setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+    };
+    am.recorder = rec;
+    am.recordOnEnd = true;
+    // Speel één volledige keer af vanaf het begin terwijl we opnemen
+    am.frozen = null;
+    am.t0 = performance.now();
+    am.playing = true;
+    if (am.audio) am.audio.master.gain.value = am.mute ? 0 : 0.16;
+    document.getElementById('movPlay').textContent = '❚❚';
+    rec.start();
+    amLoop();
+  } catch (e) {
+    alert('Opnemen mislukt: ' + e.message);
+  }
+}
+
+function closeAftermovie() {
+  if (am) {
+    am.playing = false;
+    if (am.raf) cancelAnimationFrame(am.raf);
+    if (am.recorder && am.recorder.state !== 'inactive') { try { am.recorder.stop(); } catch {} }
+    stopAmAudio();
+    am = null;
+  }
+  document.getElementById('mov').classList.remove('show');
+  // Terug naar het resultatenscherm
+  if (gs && gs.over) document.getElementById('wov').classList.add('show');
+}
+
 // ── Reset ─────────────────────────────────────────────────────────────────────
 
 function resetGame() {
