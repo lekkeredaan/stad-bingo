@@ -573,5 +573,6 @@ input:focus, select:focus, textarea:focus {
   position: absolute; color: var(--accl);
   font-family: 'Orbitron', monospace; font-size: 13px; letter-spacing: 0.06em;
 }
-#movctrls { display: flex; gap: 8px; align-items: center; }
+#movctrls { display: flex; gap: 8px; align-items: center; justify-content: center; flex-wrap: wrap; max-width: 100%; padding: 0 4px; }
 #movctrls .btn { padding: 9px 14px; font-size: 13px; min-width: 44px; }
+#movTrack { max-width: 150px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }

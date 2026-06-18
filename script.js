@@ -1570,7 +1570,14 @@ const MUSIC_VOL = 0.55;
 // Royalty-free tracks (commercieel gebruik toegestaan) in assets/audio/.
 // Voeg meer toe voor de ♫ wisselknop, bv: { name: 'Episch', file: 'assets/audio/episch.mp3' }
 const MUSIC = [
-  { name: 'Funk', file: 'assets/audio/funk-breakbeat.mp3' },
+  { name: 'Funk',        file: 'assets/audio/funk-breakbeat.mp3' },
+  { name: 'Joyful Funk', file: 'assets/audio/joyful-funk.mp3' },
+  { name: 'Vlog Hip-Hop',file: 'assets/audio/vlog-hiphop.mp3' },
+  { name: 'Hip-Hop Trip',file: 'assets/audio/hiphop-travel.mp3' },
+  { name: 'Comedy',      file: 'assets/audio/comedy-cartoon.mp3' },
+  { name: 'Actie Sport', file: 'assets/audio/action-sport.mp3' },
+  { name: 'Stomp',       file: 'assets/audio/stomp-action.mp3' },
+  { name: 'Energiek',    file: 'assets/audio/energiek.mp3' },
 ];
 let amTrack = 0;
 let am = null;   // actieve aftermovie-state
@@ -1631,6 +1638,7 @@ async function openAftermovie() {
   });
 
   am = { scenes, playing: true, mute: false, raf: null, t0: performance.now(), frozen: null, audio: null, recorder: null, recordOnEnd: false };
+  if (MUSIC.length) amTrack = Math.floor(Math.random() * MUSIC.length);
   document.getElementById('movloading').style.display = 'none';
   document.getElementById('movPlay').textContent = '❚❚';
   startAmAudio();
