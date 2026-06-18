@@ -1568,8 +1568,10 @@ function renderGallery() {
 const AM_CARD = 3000, AM_PHOTO = 3300, AM_FADE = 550;
 const MUSIC_VOL = 0.55;
 // Royalty-free tracks (commercieel gebruik toegestaan) in assets/audio/.
-// Vul aan zodra de mp3's erin staan, bv: { name: 'Feest', file: 'assets/audio/feest.mp3' }
-const MUSIC = [];
+// Voeg meer toe voor de ♫ wisselknop, bv: { name: 'Episch', file: 'assets/audio/episch.mp3' }
+const MUSIC = [
+  { name: 'Funk', file: 'assets/audio/funk-breakbeat.mp3' },
+];
 let amTrack = 0;
 let am = null;   // actieve aftermovie-state
 
