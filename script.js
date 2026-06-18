@@ -1566,6 +1566,11 @@ function renderGallery() {
 // Filmische slideshow op canvas: Ken Burns + fades + onderschriften + muziek.
 
 const AM_CARD = 3000, AM_PHOTO = 3300, AM_FADE = 550;
+const MUSIC_VOL = 0.55;
+// Royalty-free tracks (commercieel gebruik toegestaan) in assets/audio/.
+// Vul aan zodra de mp3's erin staan, bv: { name: 'Feest', file: 'assets/audio/feest.mp3' }
+const MUSIC = [];
+let amTrack = 0;
 let am = null;   // actieve aftermovie-state
 
 function loadImg(url) {
@@ -1748,42 +1753,55 @@ function amWrap(ctx, text, x, y, maxW, lh, maxLines) {
 }
 
 function startAmAudio() {
+  updateTrackBtn();
+  if (!MUSIC.length) { am.audio = null; return; }   // geen muziek → stille aftermovie
   try {
     const AC = window.AudioContext || window.webkitAudioContext;
     const ac = new AC();
     const master = ac.createGain();
-    master.gain.value = am.mute ? 0 : 0.16;
+    master.gain.value = am.mute ? 0 : MUSIC_VOL;
     master.connect(ac.destination);
     const dest = ac.createMediaStreamDestination();
     master.connect(dest);
-    am.audio = { ac, master, dest, timer: null };
-
-    const chords = [[261.63, 329.63, 392.00], [293.66, 369.99, 440.00], [220.00, 277.18, 329.63], [246.94, 311.13, 392.00]];
-    let step = 0;
-    const playStep = () => {
-      if (!am || !am.audio) return;
-      const chord = chords[step % chords.length];
-      chord.forEach((f, i) => {
-        const o = ac.createOscillator(); o.type = 'triangle'; o.frequency.value = f;
-        const g = ac.createGain(); g.gain.value = 0;
-        o.connect(g); g.connect(master);
-        const t = ac.currentTime + i * 0.11;
-        g.gain.setValueAtTime(0, t);
-        g.gain.linearRampToValueAtTime(0.28, t + 0.05);
-        g.gain.exponentialRampToValueAtTime(0.001, t + 1.0);
-        o.start(t); o.stop(t + 1.1);
-      });
-      step++;
-    };
+    am.audio = { ac, master, dest, el: null, src: null };
     if (ac.state === 'suspended') ac.resume();
-    playStep();
-    am.audio.timer = setInterval(playStep, 1400);
+    amPlayTrack(amTrack);
+  } catch { am.audio = null; }
+}
+
+function amPlayTrack(i) {
+  const a = am && am.audio;
+  if (!a || !MUSIC.length) return;
+  if (a.src) { try { a.src.disconnect(); } catch {} }
+  if (a.el)  { try { a.el.pause(); } catch {} }
+  amTrack = ((i % MUSIC.length) + MUSIC.length) % MUSIC.length;
+  const el = new Audio(MUSIC[amTrack].file);
+  el.loop = true;
+  el.crossOrigin = 'anonymous';
+  try {
+    const src = a.ac.createMediaElementSource(el);
+    src.connect(a.master);
+    a.el = el; a.src = src;
+    el.play().catch(() => {});
   } catch {}
+  updateTrackBtn();
+}
+
+function updateTrackBtn() {
+  const btn = document.getElementById('movTrack');
+  if (!btn) return;
+  if (MUSIC.length > 1) { btn.style.display = ''; btn.textContent = '♫ ' + MUSIC[amTrack].name; }
+  else                  { btn.style.display = 'none'; }
+}
+
+function aftermovieTrack() {
+  if (!am || !am.audio || !MUSIC.length) return;
+  amPlayTrack(amTrack + 1);
 }
 
 function stopAmAudio() {
   if (am?.audio) {
-    clearInterval(am.audio.timer);
+    if (am.audio.el) { try { am.audio.el.pause(); } catch {} }
     try { am.audio.ac.close(); } catch {}
     am.audio = null;
   }
@@ -1796,7 +1814,7 @@ function aftermovieToggle() {
     am.frozen = performance.now() - am.t0;
     am.playing = false;
     if (am.raf) cancelAnimationFrame(am.raf);
-    if (am.audio) am.audio.master.gain.value = 0;
+    if (am.audio?.el) { try { am.audio.el.pause(); } catch {} }
     btn.textContent = '►';
   } else {
     // Hervatten (of opnieuw afspelen als hij aan het eind stond)
@@ -1804,7 +1822,7 @@ function aftermovieToggle() {
     am.t0 = performance.now() - (am.frozen || 0);
     am.frozen = null;
     am.playing = true;
-    if (am.audio) am.audio.master.gain.value = am.mute ? 0 : 0.16;
+    if (am.audio?.el && !am.mute) { try { am.audio.el.play().catch(() => {}); } catch {} }
     btn.textContent = '❚❚';
     amLoop();
   }
@@ -1813,7 +1831,13 @@ function aftermovieToggle() {
 function aftermovieMute() {
   if (!am) return;
   am.mute = !am.mute;
-  if (am.audio) am.audio.master.gain.value = (am.mute || !am.playing) ? 0 : 0.16;
+  if (am.audio) {
+    am.audio.master.gain.value = am.mute ? 0 : MUSIC_VOL;
+    if (am.audio.el) {
+      if (am.mute) { try { am.audio.el.pause(); } catch {} }
+      else if (am.playing) { try { am.audio.el.play().catch(() => {}); } catch {} }
+    }
+  }
   document.getElementById('movMute').style.opacity = am.mute ? '0.4' : '1';
 }
 
