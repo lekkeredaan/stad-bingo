@@ -425,6 +425,7 @@ input:focus, select:focus, textarea:focus {
 }
 #pins { font-size: 12px; color: var(--muted); margin-bottom: 6px; }
 #pprev { max-width: 100%; border-radius: 10px; margin: 10px 0; display: none; max-height: 180px; object-fit: cover; }
+#pprevv { max-width: 100%; width: 100%; border-radius: 10px; margin: 10px 0; display: none; max-height: 220px; background: #000; }
 #pfile { display: none; }
 .pbr { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; margin-top: 12px; }
 

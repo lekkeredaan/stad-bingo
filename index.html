@@ -227,8 +227,9 @@
     <div class="tt" id="ptxt"></div>
     <div id="pins"></div>
     <img id="pprev" src="" alt="Foto preview voor de opdracht">
+    <video id="pprevv" style="display:none" controls playsinline preload="metadata"></video>
     <div id="pverdict" style="display:none"></div>
-    <input type="file" id="pfile" accept="image/*" capture="environment">
+    <input type="file" id="pfile" accept="image/*,video/*">
     <div class="pbr">
       <button class="btn bg2" onclick="closeClaimModal()">Annuleer</button>
       <button class="btn bp"  onclick="document.getElementById('pfile').click()" id="pshoot" style="display:none">

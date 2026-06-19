@@ -11,6 +11,13 @@ const MASTER_CODE  = 'LOCKOUT-MASTER-2026';
 const HOUR         = 60 * 60 * 1000;
 const VALIDITY_MS  = 72 * HOUR; // codes en lobby's zijn 72 uur geldig na verzilvering
 
+// ── Media-upload (foto + video) ─────────────────────────────────────────────────
+// Directe unsigned upload naar Cloudinary (browser → Cloudinary), zodat ook grote
+// telefoonvideo's werken zonder de ~10MB serverlimiet.
+const CLOUD_NAME    = 'dxgedixra';
+const UPLOAD_PRESET = 'lockout_bingo';
+const MAX_VIDEO_SEC = 60;
+
 // ── Icon library ──────────────────────────────────────────────────────────────
 
 /* Mode card icons — amber line art, 36 × 36 */
@@ -328,6 +335,7 @@ let pci            = -1;
 let pendingTeamIdx = -1;
 let myTeamIdx      = -1;   // which team this device is playing for
 let photos         = {};
+let pendingFile    = null; // gekozen foto-/videobestand voor de claim
 let currentCity = 'jouw stad';
 let gameCode    = null;
 let isHost      = false;
@@ -576,6 +584,41 @@ async function uploadPhoto(dataUrl) {
     const j = await res.json();
     return j.url || null;
   } catch { return null; }
+}
+
+// Directe unsigned upload van een foto- of videobestand naar Cloudinary.
+// Geeft { url, type } terug ('image' of 'video'), of null bij fout.
+async function uploadMedia(file) {
+  const fd = new FormData();
+  fd.append('file', file);
+  fd.append('upload_preset', UPLOAD_PRESET);
+  fd.append('folder', 'lockout-bingo');
+  try {
+    const res = await fetch(`https://api.cloudinary.com/v1_1/${CLOUD_NAME}/auto/upload`, { method: 'POST', body: fd });
+    if (!res.ok) return null;
+    const j = await res.json();
+    if (!j.secure_url) return null;
+    return { url: j.secure_url, type: j.resource_type === 'video' ? 'video' : 'image' };
+  } catch { return null; }
+}
+
+// Leid een stilstaand frame (jpg) af uit een Cloudinary-video-URL — voor de rechter + aftermovie.
+function videoFrameUrl(url) {
+  if (!url) return url;
+  return url
+    .replace('/upload/', '/upload/so_1/')
+    .replace(/\.(mp4|mov|webm|m4v|avi|3gp|mkv)(\?.*)?$/i, '.jpg');
+}
+
+// Lees de duur (seconden) van een videobestand uit.
+function videoDuration(file) {
+  return new Promise((resolve, reject) => {
+    const v = document.createElement('video');
+    v.preload = 'metadata';
+    v.onloadedmetadata = () => { const d = v.duration; URL.revokeObjectURL(v.src); resolve(d); };
+    v.onerror = () => reject(new Error('metadata'));
+    v.src = URL.createObjectURL(file);
+  });
 }
 
 // Laat De Rechter (Claude vision) de foto beoordelen; geeft {approved, score, comment} terug.
@@ -1108,7 +1151,7 @@ function onGameData(data) {
 async function syncGameState(opts = {}) {
   if (!gameCode) return;
   await fbPatch(gameCode, {
-    cells:     gs.cells.map(c => ({ text: c.text, free: c.free, claimed: c.claimed, wc: c.wc, photo: (c.photo && c.photo.startsWith('http')) ? c.photo : null, verdict: c.verdict || null })),
+    cells:     gs.cells.map(c => ({ text: c.text, free: c.free, claimed: c.claimed, wc: c.wc, photo: (c.photo && c.photo.startsWith('http')) ? c.photo : null, mtype: c.mtype || 'image', verdict: c.verdict || null })),
     teams:     gs.players.map(p => ({ name: p.name, color: p.color, score: p.score, members: p.members || [] })),
     turn:      gs.turn,
     over:      gs.over,
@@ -1234,10 +1277,13 @@ function clickCell(i) {
   document.getElementById('ptxt').textContent     = cell.text;
   document.getElementById('pprev').style.display  = 'none';
   document.getElementById('pprev').src            = '';
+  document.getElementById('pprevv').style.display = 'none';
+  document.getElementById('pprevv').removeAttribute('src');
   document.getElementById('pconf').style.display  = 'none';
   document.getElementById('pshoot').style.display = 'none';
   document.getElementById('pfile').value          = '';
   document.getElementById('pverdict').style.display = 'none';
+  pendingFile = null;
 
   if (myTeamIdx >= 0) {
     // Player is on a specific team — skip selector, go straight to photo
@@ -1278,18 +1324,20 @@ function selectClaimTeam(idx) {
   const instr = document.createElement('div');
   instr.className = 'claim-instr';
   instr.style.cssText = 'margin-top:10px;font-size:12px;color:var(--muted)';
-  instr.textContent   = `${p.name}: maak een foto als bewijs!`;
+  instr.textContent   = `${p.name}: maak een foto of video als bewijs!`;
   document.getElementById('pins').appendChild(instr);
 
   document.getElementById('pshoot').style.display = 'inline-block';
-  document.getElementById('pshoot').innerHTML = BTN.camera + 'Foto kiezen';
+  document.getElementById('pshoot').innerHTML = BTN.camera + 'Foto/video';
 }
 
 function closeClaimModal() {
   document.getElementById('pmod').classList.remove('show');
   document.getElementById('pverdict').style.display = 'none';
+  try { document.getElementById('pprevv').pause(); } catch {}
   pci            = -1;
   pendingTeamIdx = -1;
+  pendingFile    = null;
 }
 
 // Toon het oordeel van De Rechter in de claim-modal.
@@ -1308,18 +1356,38 @@ function showVerdict(verdict, rejected) {
     (rejected ? `<div style="font-size:12px;color:var(--muted);margin-top:7px">Kies een andere foto en probeer opnieuw, of annuleer.</div>` : '');
 }
 
-document.getElementById('pfile').addEventListener('change', function () {
+document.getElementById('pfile').addEventListener('change', async function () {
   if (!this.files || !this.files[0]) return;
   document.getElementById('pverdict').style.display = 'none';
-  const reader = new FileReader();
-  reader.onload = e => {
-    const prev = document.getElementById('pprev');
-    prev.src                                       = e.target.result;
-    prev.style.display                             = 'block';
-    document.getElementById('pconf').style.display = 'inline-block';
-    document.getElementById('pshoot').innerHTML = BTN.camera + 'Andere foto';
-  };
-  reader.readAsDataURL(this.files[0]);
+  const file    = this.files[0];
+  const isVideo = file.type.startsWith('video');
+
+  if (isVideo) {
+    let dur = 0;
+    try { dur = await videoDuration(file); } catch { dur = 0; }
+    if (dur > MAX_VIDEO_SEC + 0.5) {
+      alert(`Deze video duurt ${Math.round(dur)} seconden. Maximaal ${MAX_VIDEO_SEC} seconden — neem een kortere clip op.`);
+      this.value = '';
+      return;
+    }
+  }
+
+  pendingFile = file;
+  const objUrl = URL.createObjectURL(file);
+  const img = document.getElementById('pprev');
+  const vid = document.getElementById('pprevv');
+  if (isVideo) {
+    img.style.display = 'none';
+    vid.src = objUrl;
+    vid.style.display = 'block';
+  } else {
+    try { vid.pause(); } catch {}
+    vid.style.display = 'none';
+    img.src = objUrl;
+    img.style.display = 'block';
+  }
+  document.getElementById('pconf').style.display = 'inline-block';
+  document.getElementById('pshoot').innerHTML = BTN.camera + 'Andere opname';
 });
 
 async function confirmClaim() {
@@ -1336,24 +1404,30 @@ async function confirmClaim() {
 
   const confBtn   = document.getElementById('pconf');
   const claimHtml = '<svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-right:4px"><path d="M2.5 7l3.5 3.5L12 4"/></svg>Claim!';
-  const photoData = document.getElementById('pprev').src;
 
-  // ── Foto uploaden naar Cloudinary (gedeeld) — anders lokale base64-fallback ──
-  let photoUrl = null;
-  if (photoData?.startsWith('data:')) {
+  // ── Foto/video rechtstreeks naar Cloudinary uploaden ────────────────────────
+  let mediaUrl = null, mediaType = 'image';
+  if (pendingFile) {
     confBtn.textContent = 'Uploaden...';
     confBtn.disabled = true;
-    photoUrl = await uploadPhoto(photoData);
+    const up = await uploadMedia(pendingFile);
     confBtn.innerHTML = claimHtml;
     confBtn.disabled = false;
+    if (!up) {
+      alert('Uploaden mislukt. Controleer je verbinding en probeer het opnieuw, of kies een ander bestand.');
+      return;
+    }
+    mediaUrl  = up.url;
+    mediaType = up.type;
   }
 
-  // ── De Rechter beoordeelt de foto (indien ingeschakeld) ─────────────────────
+  // ── De Rechter beoordeelt (video → stilstaand frame) ────────────────────────
   let verdict = null;
-  if (gs.judge && gs.judge !== 'off' && photoUrl) {
+  const judgeImg = mediaType === 'video' ? videoFrameUrl(mediaUrl) : mediaUrl;
+  if (gs.judge && gs.judge !== 'off' && judgeImg) {
     confBtn.textContent = 'Rechter beoordeelt...';
     confBtn.disabled = true;
-    verdict = await judgePhoto(gs.cells[i].text, photoUrl);
+    verdict = await judgePhoto(gs.cells[i].text, judgeImg);
     confBtn.innerHTML = claimHtml;
     confBtn.disabled = false;
 
@@ -1385,12 +1459,10 @@ async function confirmClaim() {
   cell.claimed = pn;
   player.score++;
 
-  // Bewaar gedeelde URL, of base64 als lokale fallback (upload mislukt / lokale modus)
-  cell.photo = photoUrl || (photoData?.startsWith('data:') ? photoData : null);
+  // Bewaar gedeelde media-URL + type
+  cell.photo = mediaUrl;
+  cell.mtype = mediaType;
   if (verdict) cell.verdict = { score: verdict.score, comment: verdict.comment, approved: verdict.approved !== false };
-  if (cell.photo) {
-    photos[i] = { photo: cell.photo, task: cell.text, player: player.name, color: COLS[player.color].m };
-  }
 
   closeClaimModal();
 
@@ -1542,6 +1614,7 @@ function renderGallery() {
       const player = gs.players[c.claimed - 1];
       return {
         photo:   c.photo,
+        mtype:   c.mtype || 'image',
         task:    c.text,
         player:  player ? player.name : '',
         color:   player ? COLS[player.color].m : 'var(--muted)',
@@ -1549,12 +1622,14 @@ function renderGallery() {
       };
     });
   if (!shots.length) {
-    grid.innerHTML = '<div style="color:var(--muted);font-size:11px;padding:7px">Nog geen foto\'s gemaakt.</div>';
+    grid.innerHTML = '<div style="color:var(--muted);font-size:11px;padding:7px">Nog geen foto\'s of video\'s gemaakt.</div>';
     return;
   }
   grid.innerHTML = shots.map(p =>
     `<div class="gi">
-       <img src="${p.photo}" alt="foto" loading="lazy">
+       ${p.mtype === 'video'
+         ? `<video src="${p.photo}" controls playsinline preload="metadata" style="width:100%;height:76px;object-fit:cover;display:block;background:#000"></video>`
+         : `<img src="${p.photo}" alt="foto" loading="lazy">`}
        <div class="gl" style="color:${p.color}">${p.player}</div>
        <div class="gl">${p.task.substring(0, 38)}</div>
        ${p.verdict ? `<div class="gl" style="color:var(--acc)">★ ${p.verdict.score}/10 — ${(p.verdict.comment || '').substring(0, 60)}</div>` : ''}
@@ -1604,7 +1679,8 @@ async function openAftermovie() {
     .filter(c => c.photo && c.claimed)
     .map(c => {
       const p = gs.players[c.claimed - 1];
-      return { url: c.photo, team: p ? p.name : '', color: p ? COLS[p.color].m : '#e8820a', task: c.text, verdict: c.verdict || null };
+      const isVideo = c.mtype === 'video';
+      return { url: isVideo ? videoFrameUrl(c.photo) : c.photo, isVideo, team: p ? p.name : '', color: p ? COLS[p.color].m : '#e8820a', task: c.text, verdict: c.verdict || null };
     });
 
   const modeName = (MODES.find(m => m.id === gs.mode) || {}).name || '';
@@ -1713,6 +1789,14 @@ function amDrawPhoto(ctx, W, H, sc, prog, idx) {
     ctx.fillStyle = '#ffd055';
     ctx.font = "700 34px Orbitron, monospace";
     ctx.fillText('★ ' + sc.verdict.score + '/10', 60, H - 70);
+  }
+  // Video-markering (▶) rechtsboven
+  if (sc.isVideo) {
+    const cx = W - 70, cy = 70, r = 30;
+    ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI * 2);
+    ctx.fillStyle = 'rgba(0,0,0,0.5)'; ctx.fill();
+    ctx.beginPath(); ctx.moveTo(cx - 9, cy - 13); ctx.lineTo(cx - 9, cy + 13); ctx.lineTo(cx + 14, cy); ctx.closePath();
+    ctx.fillStyle = '#fff'; ctx.fill();
   }
 }
 
