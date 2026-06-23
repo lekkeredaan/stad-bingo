@@ -1161,6 +1161,20 @@ async function syncGameState(opts = {}) {
   });
 }
 
+// Gerichte sync van één claim — patcht alleen het vakje + de teamscore, zodat
+// gelijktijdige claims op verschillende vakjes elkaar niet overschrijven.
+async function syncClaim(i, pi) {
+  if (!gameCode) return;
+  const c = gs.cells[i];
+  await fbPatchPath(`games/${gameCode}/cells/${i}`, {
+    claimed: c.claimed,
+    photo:   (c.photo && c.photo.startsWith('http')) ? c.photo : null,
+    mtype:   c.mtype || 'image',
+    verdict: c.verdict || null,
+  });
+  await fbPatchPath(`games/${gameCode}/teams/${pi}`, { score: gs.players[pi].score });
+}
+
 // ── Timer ─────────────────────────────────────────────────────────────────────
 
 function startTimer() {
@@ -1491,7 +1505,7 @@ async function confirmClaim() {
   }
 
   renderGame();
-  await syncGameState();
+  await syncClaim(i, pi);
 }
 
 function checkBingo(pn) {
