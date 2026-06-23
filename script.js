@@ -1125,6 +1125,7 @@ function onGameData(data) {
         ts:      tm * 60,
         tstart:  data.tstart || null,
       };
+      computeScores();
       showScreen('game');
       if (tm > 0 && gs.tstart) startTimer();
       renderGame();
@@ -1134,6 +1135,7 @@ function onGameData(data) {
       gs.cells   = data.cells.map((c, i) => ({ ...c, photo: c.photo || gs.cells[i]?.photo || null }));
       gs.players = data.teams;
       gs.turn    = data.turn;
+      computeScores();
       gs.over    = data.over || data.status === 'over';
       renderGame();
 
@@ -1144,6 +1146,16 @@ function onGameData(data) {
       }
     }
   }
+}
+
+// ── Scores ────────────────────────────────────────────────────────────────────
+// Score = aantal vakjes dat een team heeft geclaimd. Afgeleid uit de cellen
+// (de bron van waarheid), zodat gelijktijdige claims de score nooit mis laten lopen.
+function computeScores() {
+  if (!gs) return;
+  gs.players.forEach((p, k) => {
+    p.score = gs.cells.filter(c => c.claimed === k + 1).length;
+  });
 }
 
 // ── Game state sync naar Firebase ─────────────────────────────────────────────
@@ -1163,7 +1175,7 @@ async function syncGameState(opts = {}) {
 
 // Gerichte sync van één claim — patcht alleen het vakje + de teamscore, zodat
 // gelijktijdige claims op verschillende vakjes elkaar niet overschrijven.
-async function syncClaim(i, pi) {
+async function syncClaim(i) {
   if (!gameCode) return;
   const c = gs.cells[i];
   await fbPatchPath(`games/${gameCode}/cells/${i}`, {
@@ -1172,7 +1184,6 @@ async function syncClaim(i, pi) {
     mtype:   c.mtype || 'image',
     verdict: c.verdict || null,
   });
-  await fbPatchPath(`games/${gameCode}/teams/${pi}`, { score: gs.players[pi].score });
 }
 
 // ── Timer ─────────────────────────────────────────────────────────────────────
@@ -1471,12 +1482,12 @@ async function confirmClaim() {
   const player = gs.players[pi];
 
   cell.claimed = pn;
-  player.score++;
 
   // Bewaar gedeelde media-URL + type
   cell.photo = mediaUrl;
   cell.mtype = mediaType;
   if (verdict) cell.verdict = { score: verdict.score, comment: verdict.comment, approved: verdict.approved !== false };
+  computeScores();
 
   closeClaimModal();
 
@@ -1505,7 +1516,7 @@ async function confirmClaim() {
   }
 
   renderGame();
-  await syncClaim(i, pi);
+  await syncClaim(i);
 }
 
 function checkBingo(pn) {
@@ -2082,6 +2093,7 @@ async function restoreSession() {
         ts:      tm * 60,
         tstart:  data.tstart || null,
       };
+      computeScores();
       document.getElementById('gal').style.display = 'none';
       showScreen('game');
       if (tm > 0 && gs.tstart) startTimer();
