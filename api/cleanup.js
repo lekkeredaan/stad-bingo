@@ -11,13 +11,14 @@ export default async function handler(req, res) {
     return res.status(401).json({ error: 'Unauthorized' });
   }
 
+  res.setHeader('Cache-Control', 'no-store');
   const now = Date.now();
   let gamesDeleted = 0, gamesKept = 0, codesDeleted = 0;
   const errors = [];
 
   try {
     // ── Verlopen lobby's ───────────────────────────────────────────────────────
-    const games = await (await fetch(`${DB_URL}/games.json`)).json() || {};
+    const games = await (await fetch(`${DB_URL}/games.json`, { cache: 'no-store' })).json() || {};
     for (const [code, g] of Object.entries(games)) {
       if (g && g.expiresAt && g.expiresAt < now) {
         const r = await fetch(`${DB_URL}/games/${code}.json`, { method: 'DELETE' });
@@ -28,7 +29,7 @@ export default async function handler(req, res) {
     }
 
     // ── Verzilverde codes die verlopen zijn (ongebruikte blijven staan) ─────────
-    const codes = await (await fetch(`${DB_URL}/redeemCodes.json`)).json() || {};
+    const codes = await (await fetch(`${DB_URL}/redeemCodes.json`, { cache: 'no-store' })).json() || {};
     for (const [code, c] of Object.entries(codes)) {
       if (c && c.status === 'redeemed' && c.expiresAt && c.expiresAt < now) {
         const r = await fetch(`${DB_URL}/redeemCodes/${code}.json`, { method: 'DELETE' });
