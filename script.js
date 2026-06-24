@@ -1738,12 +1738,13 @@ async function openAftermovie() {
     scores: ranked.slice(0, 6).map(p => ({ name: p.name, score: p.score, color: COLS[p.color].m })),
   });
 
-  am = { scenes, playing: true, mute: false, raf: null, t0: performance.now(), frozen: null, audio: null, recorder: null, recordOnEnd: false };
+  am = { scenes, playing: true, mute: false, raf: null, t0: performance.now(), frozen: null, audio: null, recorder: null, shareReady: null };
   if (MUSIC.length) amTrack = Math.floor(Math.random() * MUSIC.length);
   document.getElementById('movloading').style.display = 'none';
   document.getElementById('movPlay').textContent = '❚❚';
   startAmAudio();
   amLoop();
+  startAmRecording();   // neemt het eerste afspelen op → deel/download meteen gereed
 }
 
 function amTotal() { return am.scenes.reduce((s, sc) => s + (sc.type === 'photo' ? AM_PHOTO : AM_CARD), 0); }
@@ -1965,49 +1966,69 @@ function amEnd() {
   am.frozen = amTotal();
   document.getElementById('movPlay').textContent = '►';
   if (am.audio) am.audio.master.gain.value = 0;
-  if (am.recordOnEnd && am.recorder && am.recorder.state !== 'inactive') {
-    am.recorder.stop();
-    am.recordOnEnd = false;
+  // Stop de auto-opname van het eerste afspelen → filmpje is klaar om te delen/downloaden
+  if (am.recorder && am.recorder.state === 'recording') {
+    try { am.recorder.stop(); } catch {}
   }
 }
 
-function aftermovieDownload() {
-  if (!am) return;
+function pickVideoMime() {
+  if (typeof MediaRecorder === 'undefined' || !MediaRecorder.isTypeSupported) return '';
+  const cands = ['video/mp4;codecs=h264,aac', 'video/mp4', 'video/webm;codecs=vp9', 'video/webm'];
+  for (const m of cands) { try { if (MediaRecorder.isTypeSupported(m)) return m; } catch {} }
+  return '';
+}
+
+// Neemt het canvas + de muziek op tijdens het eerste afspelen, zodat delen/downloaden
+// daarna direct een kant-en-klaar bestand heeft (belangrijk voor de iOS-deeltik).
+function startAmRecording() {
+  const dl = document.getElementById('movDl');
+  const sh = document.getElementById('movShare');
+  const cv = document.getElementById('movcv');
+  const mime = pickVideoMime();
+  const setReady = ready => [dl, sh].forEach(b => { if (b) { b.disabled = !ready; b.style.opacity = ready ? '1' : '0.5'; } });
+
+  if (!cv.captureStream || !mime) { setReady(true); return; } // opname onmogelijk → knoppen tonen melding
+  setReady(false);
   try {
-    const cv = document.getElementById('movcv');
-    if (!cv.captureStream || typeof MediaRecorder === 'undefined') {
-      alert('Video-download wordt niet ondersteund in deze browser. De aftermovie speelt wel gewoon af.');
-      return;
-    }
     const stream = cv.captureStream(30);
     if (am.audio?.dest) am.audio.dest.stream.getAudioTracks().forEach(t => stream.addTrack(t));
-    const mime = MediaRecorder.isTypeSupported('video/webm;codecs=vp9') ? 'video/webm;codecs=vp9'
-              : MediaRecorder.isTypeSupported('video/webm') ? 'video/webm' : '';
-    if (!mime) { alert('Video-download wordt niet ondersteund in deze browser. De aftermovie speelt wel gewoon af.'); return; }
-
     const rec = new MediaRecorder(stream, { mimeType: mime });
     const chunks = [];
     rec.ondataavailable = e => { if (e.data.size) chunks.push(e.data); };
     rec.onstop = () => {
-      const blob = new Blob(chunks, { type: mime });
-      const a = document.createElement('a');
-      a.href = URL.createObjectURL(blob);
-      a.download = 'lockout-bingo-aftermovie.webm';
-      a.click();
-      setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+      const ext = mime.startsWith('video/mp4') ? 'mp4' : 'webm';
+      am.shareReady = { blob: new Blob(chunks, { type: mime }), ext, mime };
+      setReady(true);
     };
     am.recorder = rec;
-    am.recordOnEnd = true;
-    // Speel één volledige keer af vanaf het begin terwijl we opnemen
-    am.frozen = null;
-    am.t0 = performance.now();
-    am.playing = true;
-    if (am.audio) am.audio.master.gain.value = am.mute ? 0 : 0.16;
-    document.getElementById('movPlay').textContent = '❚❚';
     rec.start();
-    amLoop();
-  } catch (e) {
-    alert('Opnemen mislukt: ' + e.message);
+  } catch { setReady(true); }
+}
+
+function aftermovieDownload() {
+  if (!am) return;
+  if (!am.shareReady) { alert('Het filmpje is nog aan het renderen — wacht tot de aftermovie is afgespeeld.'); return; }
+  const { blob, ext } = am.shareReady;
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'lockout-bingo-aftermovie.' + ext;
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+}
+
+async function aftermovieShare() {
+  if (!am) return;
+  if (!am.shareReady) { alert('Het filmpje is nog aan het renderen — wacht tot de aftermovie is afgespeeld.'); return; }
+  const { blob, ext, mime } = am.shareReady;
+  const file = new File([blob], 'lockout-bingo-aftermovie.' + ext, { type: mime });
+  if (navigator.canShare && navigator.canShare({ files: [file] })) {
+    try {
+      await navigator.share({ files: [file], title: 'Lockout-Bingo aftermovie', text: 'Onze Lockout-Bingo aftermovie!' });
+    } catch { /* gebruiker annuleerde — niets doen */ }
+  } else {
+    aftermovieDownload();
+    alert('Direct delen wordt niet ondersteund in deze browser; de aftermovie is gedownload zodat je hem zelf kunt delen.');
   }
 }
 
