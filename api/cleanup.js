@@ -32,7 +32,8 @@ export default async function handler(req, res) {
   }
 
   const now = Date.now();
-  let gamesDeleted = 0, gamesKept = 0, codesDeleted = 0;
+  const purgeLegacy = req.query?.purgeLegacy === '1'; // eenmalig: ook spellen zonder expiresAt
+  let gamesDeleted = 0, gamesKept = 0, legacyDeleted = 0, codesDeleted = 0;
 
   try {
     const db = getDb();
@@ -44,6 +45,9 @@ export default async function handler(req, res) {
         await db.ref(`games/${code}`).remove();
         gamesDeleted++;
         if (g.redemptionCode) await db.ref(`redeemCodes/${g.redemptionCode}`).remove();
+      } else if (purgeLegacy && (!g || !g.expiresAt)) {
+        await db.ref(`games/${code}`).remove();
+        legacyDeleted++;
       } else {
         gamesKept++;
       }
@@ -58,7 +62,7 @@ export default async function handler(req, res) {
       }
     }
 
-    return res.status(200).json({ ok: true, gamesDeleted, gamesKept, codesDeleted });
+    return res.status(200).json({ ok: true, gamesDeleted, gamesKept, legacyDeleted, codesDeleted });
   } catch (err) {
     console.error('Cleanup fout:', err);
     return res.status(500).json({ error: 'Cleanup mislukt: ' + err.message });
