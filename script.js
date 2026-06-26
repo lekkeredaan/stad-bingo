@@ -94,6 +94,24 @@ const MODES = [
   { id: 'custom',  icon: ICONS.custom,  name: 'Vrij',        desc: 'Eigen opdrachten invoeren' },
 ];
 
+// Sticker-stijl per spelmodus: accentkleur + sprite-icoon
+const MODE_STYLE = {
+  family:  { c: '--lb-orange', icon: 'lb-fam' },
+  kids:    { c: '--lb-teal',   icon: 'lb-kite' },
+  adults:  { c: '--lb-green',  icon: 'lb-target' },
+  adult18: { c: '--lb-purple', icon: 'lb-glass' },
+  loco:    { c: '--lb-pink',   icon: 'lb-spark' },
+  custom:  { c: '--lb-amber',  icon: 'lb-pencil' },
+};
+
+// Bepaal het opdrachttype (kleur + glyph) uit de opdrachttekst
+function tileType(text) {
+  const t = (text || '').trim().toLowerCase();
+  if (/^(foto|selfie|groepsfoto)/.test(t) || /foto/.test(t.slice(0, 22))) return { cls: 'lb-tile--cam',  icon: 'lb-cam' };
+  if (/^vraag/.test(t))                                                    return { cls: 'lb-tile--ask',  icon: 'lb-ask' };
+  return { cls: 'lb-tile--find', icon: 'lb-find' };
+}
+
 const TASKS = {
   family: [
     'Maak een foto met een hond','Vind een bankje en ga zitten','Foto met iemand in een felle kleur',
@@ -697,13 +715,15 @@ function detectCity() {
 
 function initSetup() {
   const mg = document.getElementById('mgrid');
-  mg.innerHTML = MODES.map((m, i) =>
-    `<div class="mc${i === 0 ? ' sel' : ''}" data-id="${m.id}" onclick="selMode('${m.id}')">
-       <div class="mi">${m.icon}</div>
-       <div class="mn">${m.name}</div>
-       <div class="md">${m.desc}</div>
-     </div>`
-  ).join('');
+  mg.classList.add('lb-modes');
+  mg.innerHTML = MODES.map((m, i) => {
+    const st = MODE_STYLE[m.id] || MODE_STYLE.family;
+    return `<button type="button" class="lb-mode-card${i === 0 ? ' is-active' : ''}" data-id="${m.id}" style="--c:var(${st.c})" onclick="selMode('${m.id}')">
+       <div class="lb-sticker" style="--c:var(${st.c})"><svg viewBox="0 0 24 24"><use href="#${st.icon}"/></svg></div>
+       <span class="lb-mode-card__title">${m.name}</span>
+       <span class="lb-mode-card__sub">${m.desc}</span>
+     </button>`;
+  }).join('');
 
   renderPlayers();
 
@@ -721,13 +741,13 @@ function initSetup() {
 }
 
 function selMode(id) {
-  document.querySelectorAll('.mc').forEach(c => c.classList.toggle('sel', c.dataset.id === id));
+  document.querySelectorAll('.lb-mode-card').forEach(c => c.classList.toggle('is-active', c.dataset.id === id));
   document.getElementById('cc').style.display = id === 'custom' ? 'block' : 'none';
   updateCustomCount();
 }
 
 function getMode() {
-  return (document.querySelector('.mc.sel') || { dataset: { id: 'family' } }).dataset.id;
+  return (document.querySelector('.lb-mode-card.is-active') || { dataset: { id: 'family' } }).dataset.id;
 }
 
 function renderPlayers() {
@@ -1205,9 +1225,8 @@ function updateTimerDisplay(rem, tot) {
   const m  = Math.floor(rem / 60);
   const s  = rem % 60;
   el.textContent      = `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
-  el.style.color      = rem < 60 ? '#ff4444' : rem < tot * .25 ? '#ffaa00' : 'var(--txt)';
+  el.style.color      = rem < 60 ? '#B3414B' : rem < tot * .25 ? '#C06A00' : '#241B12';
   tf.style.width      = `${Math.round(rem / tot * 100)}%`;
-  tf.style.background = rem < 60 ? '#ff4444' : rem < tot * .25 ? '#ffaa00' : 'var(--acc)';
   document.getElementById('tlbl').textContent = `${Math.ceil(rem / 60)} min over`;
 }
 
@@ -1231,58 +1250,77 @@ function timeUp() {
 // charAspect ≈ 0.65 accounts for character width vs height ratio + line-height.
 
 function cellFontSize(cp, len) {
-  const avail = cp - 10;           // subtract padding
-  const byArea = avail / Math.sqrt(len * 0.65);
-  return Math.max(7, Math.min(13, Math.floor(byArea)));
+  const avail = cp - 8;            // subtract padding
+  // factor 0.92 ~ compenseert voor de bredere Nunito-700 letters t.o.v. het oude font
+  const byArea = avail / Math.sqrt(len * 0.92);
+  return Math.max(7, Math.min(12, Math.floor(byArea)));
 }
 
 // ── Render game ───────────────────────────────────────────────────────────────
 
 function renderGame() {
-  const m = MODES.find(x => x.id === gs.mode);
-  document.getElementById('mlbl').innerHTML = `${m.icon} <span style="vertical-align:middle">${m.name}</span>`;
+  const m  = MODES.find(x => x.id === gs.mode);
+  const st = MODE_STYLE[gs.mode] || MODE_STYLE.family;
+  document.getElementById('mlbl').innerHTML =
+    `<div class="lb-sticker" style="--c:var(${st.c});width:38px;height:38px;border-radius:13px;border-width:2.5px"><svg viewBox="0 0 24 24"><use href="#${st.icon}"/></svg></div>` +
+    `<span class="lb-mname">${m.name}</span>`;
 
   if (gs.tm > 0) document.getElementById('tbar').style.display = 'flex';
 
-  document.getElementById('pchips').innerHTML = gs.players.map((p) => {
+  document.getElementById('pchips').innerHTML = gs.players.map(p => {
     const c = COLS[p.color];
-    return `<div class="chip" style="background:${c.b};border-color:${c.m};color:${c.l}">
-              ${p.name}<span class="cs">${p.score}</span>
+    return `<div class="lb-team" style="background:${c.b};color:${c.l};box-shadow:0 5px 13px ${c.m}55">
+              <span class="lb-team__name">${p.name}</span>
+              <span class="lb-team__count" style="color:${c.l}">${p.score}</span>
             </div>`;
   }).join('');
 
   document.getElementById('turnl').innerHTML = '';
 
-  const board     = document.getElementById('board');
-  const sz        = gs.sz;
-  const available = Math.min(window.innerWidth, 480) - 24; // phone-first: max 480px app width, 12px padding each side
-  const gaps      = (sz - 1) * 4;
-  const cp        = Math.max(44, Math.min(86, Math.floor((available - gaps) / sz)));
+  const board = document.getElementById('board');
+  const sz    = gs.sz;
+  const gapPx = sz >= 6 ? 5 : 8;
+  board.style.gap = gapPx + 'px';
+  const available = Math.min(window.innerWidth, 480) - 24; // phone-first: max 480px, 12px padding elk
+  const gaps      = (sz - 1) * gapPx;
+  const cp        = Math.max(44, Math.min(88, Math.floor((available - gaps) / sz)));
   board.style.gridTemplateColumns = `repeat(${sz}, ${cp}px)`;
+  const showIcon  = cp >= 72;   // alleen iconen tonen bij ruime tegels (3x3/4x4); anders kleur+tint
 
   board.innerHTML = gs.cells.map((cell, i) => {
     if (cell.free) {
-      return `<div class="cell fr" style="width:${cp}px;height:${cp}px;font-size:9px">VRIJ</div>`;
+      return `<div class="lb-tile lb-tile--free" style="width:${cp}px;height:${cp}px">
+                <svg viewBox="0 0 24 24" style="width:${Math.round(cp * 0.4)}px;height:${Math.round(cp * 0.4)}px"><use href="#lb-star"/></svg>
+                <span style="font-size:${Math.max(11, Math.round(cp * 0.2))}px">VRIJ</span>
+              </div>`;
     }
 
-    let bg = 'var(--surf)', bc = 'var(--bdr)', tc = 'var(--txt)';
+    const tt = tileType(cell.text);
+
     if (cell.claimed) {
-      const c = COLS[gs.players[cell.claimed - 1].color];
-      bg = c.b; bc = c.m; tc = c.l;
+      const p        = gs.players[cell.claimed - 1];
+      const c        = COLS[p.color];
+      const showOwner = cp >= 54;
+      const cfs      = cellFontSize(showOwner ? cp - 12 : cp, cell.text.length);
+      const owner    = showOwner ? `<span class="lb-tile__owner" style="color:${c.l}">${(p.name || '').substring(0, 9)}</span>` : '';
+      const photoBadge = cell.photo ? `<span class="lb-tile__pb" style="color:#fff">${BTN.camSm}</span>` : '';
+      return `<div class="lb-tile ${tt.cls} is-claimed${cell.wc ? ' wc' : ''}"
+                 style="width:${cp}px;height:${cp}px;background:${c.b};--glow:${c.m}66"
+                 onclick="clickCell(${i})">
+                ${photoBadge}
+                <span class="lb-tile__text" style="font-size:${cfs}px;color:${c.l}">${cell.text}</span>
+                ${owner}
+                <span class="lb-seal"><svg viewBox="0 0 24 24"><use href="#lb-seal"/></svg></span>
+              </div>`;
     }
 
-    const ownerName = cell.claimed ? gs.players[cell.claimed - 1].name : '';
-    const photoIcon = cell.photo ? `<span class="pb" style="color:var(--acc)">${BTN.camSm}</span>` : '';
-    const wc        = cell.wc ? ' wc' : '';
-    const fs        = cellFontSize(cp, cell.text.length);
-
-    return `<div class="cell${cell.claimed ? ' cl' : ''}${wc}"
-               style="width:${cp}px;height:${cp}px;background:${bg};border-color:${bc};color:${tc};font-size:${fs}px"
-               onclick="clickCell(${i})">
-              ${photoIcon}${cell.text}
-              ${ownerName
-                ? `<div class="ow" style="color:${COLS[gs.players[cell.claimed - 1].color].m}">${ownerName.substring(0, 8)}</div>`
-                : ''}
+    const fs = cellFontSize(showIcon ? cp - 16 : cp, cell.text.length);
+    const ic = showIcon
+      ? `<svg class="lb-tile__icon" viewBox="0 0 24 24" style="width:${Math.round(cp * 0.28)}px;height:${Math.round(cp * 0.28)}px"><use href="#${tt.icon}"/></svg>`
+      : '';
+    return `<div class="lb-tile ${tt.cls}" style="width:${cp}px;height:${cp}px" onclick="clickCell(${i})">
+              ${ic}
+              <span class="lb-tile__text" style="font-size:${fs}px">${cell.text}</span>
             </div>`;
   }).join('');
 
@@ -1516,6 +1554,8 @@ async function confirmClaim() {
   }
 
   renderGame();
+  const tEl = document.getElementById('board').children[i];
+  if (tEl) { tEl.classList.add('lb-pop'); setTimeout(() => tEl.classList.remove('lb-pop'), 460); }
   await syncClaim(i);
 }
 

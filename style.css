@@ -577,3 +577,127 @@ input:focus, select:focus, textarea:focus {
 #movctrls { display: flex; gap: 8px; align-items: center; justify-content: center; flex-wrap: wrap; max-width: 100%; padding: 0 4px; }
 #movctrls .btn { padding: 9px 14px; font-size: 13px; min-width: 44px; }
 #movTrack { max-width: 150px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* ════════════════════════════════════════════════════════════════════════════
+   Sticker-redesign — speelse, warme "sticker"-stijl
+   ════════════════════════════════════════════════════════════════════════════ */
+:root {
+  --lb-bg-1: #FCEFE0; --lb-bg-2: #FBF4EC; --lb-card: #FBF4EC; --lb-card-active: #FFF8EF;
+  --lb-ink: #2A2118; --lb-muted: #9A7B55; --lb-line: #F0E2CE;
+  --lb-orange: #E8801C; --lb-teal: #2BA3A0; --lb-green: #3FA24A; --lb-purple: #8A5BC8; --lb-pink: #E0556E; --lb-amber: #F0A92B;
+  --lb-tint-cam: #FBEAD6; --lb-tint-find: #E1F1F0; --lb-tint-ask: #EFE7F8;
+}
+body { background: linear-gradient(180deg, var(--lb-bg-1), var(--lb-bg-2) 40%); background-attachment: scroll; }
+
+/* logo */
+.lb-logo { margin: 0; font-family: 'Anton', sans-serif; line-height: .84; text-align: center; letter-spacing: .01em; position: relative; }
+.lb-logo .l1 { color: var(--lb-orange); display: block; font-size: clamp(40px, 12vw, 60px); }
+.lb-logo .l2 { color: #241B12; display: block; font-size: clamp(30px, 9vw, 44px); }
+
+/* headers op overige schermen (lobby/join/verzilveren) — Fredoka i.p.v. Orbitron */
+.setup-title { font-family: 'Fredoka', sans-serif; font-weight: 700; }
+.setup-sub   { font-family: 'Nunito', sans-serif; }
+.lb-label { font-family: 'Space Mono', monospace; font-size: 11px; letter-spacing: .2em; text-transform: uppercase; color: #B79D7E; }
+
+/* ── Sticker-badge ── */
+.lb-sticker {
+  width: 60px; height: 60px; border-radius: 20px; background: var(--c, var(--lb-orange));
+  border: 3px solid #fff; flex-shrink: 0;
+  box-shadow: 0 7px 14px color-mix(in srgb, var(--c, var(--lb-orange)) 40%, transparent), inset 0 -3px 0 rgba(0,0,0,.08);
+  display: grid; place-items: center; transform: rotate(var(--rot, -5deg));
+}
+.lb-sticker svg { width: 30px; height: 30px; fill: none; stroke: #fff; color: #fff; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+
+/* ── Spelmodus-kaarten ── */
+.lb-modes { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+.lb-mode-card {
+  position: relative; display: flex; flex-direction: column; align-items: center; gap: 11px;
+  padding: 22px 14px 18px; border-radius: 22px; background: var(--lb-card);
+  border: 2px solid rgba(0,0,0,.04); cursor: pointer; width: 100%; font: inherit; color: inherit; text-align: center;
+  transition: transform .12s, box-shadow .15s, border-color .15s;
+}
+.lb-mode-card:active { transform: scale(.98); }
+.lb-mode-card.is-active {
+  background: var(--lb-card-active); border: 2.5px solid var(--c, var(--lb-orange));
+  box-shadow: 0 10px 22px color-mix(in srgb, var(--c, var(--lb-orange)) 18%, transparent);
+}
+.lb-mode-card.is-active::after {
+  content: ""; position: absolute; top: 10px; right: 10px; width: 22px; height: 22px; border-radius: 50%;
+  background: var(--c, var(--lb-orange));
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M8 12.2l2.6 2.6L16.2 8.6'/%3E%3C/svg%3E");
+  background-size: 14px; background-repeat: no-repeat; background-position: center;
+}
+.lb-mode-card__title { font-family: 'Fredoka', sans-serif; font-weight: 600; font-size: 18px; color: var(--lb-ink); }
+.lb-mode-card__sub   { font-family: 'Nunito', sans-serif; font-size: 13px; color: var(--lb-muted); line-height: 1.3; }
+
+/* ── Bingobord ── */
+#board { display: grid; gap: 8px; width: fit-content; margin: 0 auto 12px; }
+.lb-tile {
+  cursor: pointer; position: relative; overflow: hidden;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px;
+  border-radius: 14px; padding: 4px 4px;
+  background: var(--tint, #fff); border: 1.5px solid rgba(0,0,0,.04); border-top: 3px solid var(--c, var(--lb-orange));
+  box-shadow: 0 2px 5px rgba(120,80,30,.07);
+  transition: transform .12s, box-shadow .12s; user-select: none;
+  touch-action: manipulation; -webkit-tap-highlight-color: transparent;
+}
+.lb-tile:active:not(.is-claimed):not(.lb-tile--free) { transform: scale(.95); }
+@media (hover:hover) { .lb-tile:hover:not(.is-claimed):not(.lb-tile--free) { transform: translateY(-3px); box-shadow: 0 9px 17px rgba(120,80,30,.17); } }
+.lb-tile__icon { flex: none; color: var(--c, var(--lb-orange)); fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.lb-tile__text { font-family: 'Nunito', sans-serif; font-weight: 700; line-height: 1.16; color: #3A2C1C; text-align: center; text-wrap: balance; word-break: break-word; }
+.lb-tile--cam  { --c: var(--lb-orange); --tint: var(--lb-tint-cam); }
+.lb-tile--find { --c: var(--lb-teal);   --tint: var(--lb-tint-find); }
+.lb-tile--ask  { --c: var(--lb-purple); --tint: var(--lb-tint-ask); }
+
+/* geclaimde tegel — donkere teamtint (leesbaar voor alle 6 kleuren) + stempel */
+.lb-tile.is-claimed { border: none; cursor: default; box-shadow: 0 6px 15px var(--glow, rgba(0,0,0,.3)); }
+.lb-tile.is-claimed::after { content: ""; position: absolute; inset: 0; background: radial-gradient(circle at 28% 12%, rgba(255,255,255,.14), transparent 60%); pointer-events: none; }
+.lb-tile.is-claimed .lb-tile__icon { display: none; }
+.lb-tile.is-claimed .lb-tile__text { font-weight: 800; }
+.lb-tile__owner { font-family: 'Fredoka', sans-serif; font-weight: 600; font-size: 8px; opacity: .8; margin-top: 1px; letter-spacing: .03em; }
+.lb-tile__pb { position: absolute; left: 5px; top: 5px; opacity: .85; }
+.lb-seal { position: absolute; right: 6px; top: 6px; width: 21px; height: 21px; border-radius: 50%; background: rgba(255,255,255,.18); display: grid; place-items: center; z-index: 3; }
+.lb-seal svg { width: 13px; height: 13px; fill: none; stroke: #fff; stroke-width: 2.8; stroke-linecap: round; stroke-linejoin: round; }
+.lb-tile.lb-pop { animation: lb-claim .35s cubic-bezier(.34,1.56,.64,1); }
+.lb-tile.lb-pop .lb-seal { animation: lb-seal .4s .1s both; }
+@keyframes lb-claim { 0% { transform: scale(.82); } 60% { transform: scale(1.04); } 100% { transform: scale(1); } }
+@keyframes lb-seal  { 0% { transform: scale(0) rotate(-25deg); opacity: 0; } 70% { transform: scale(1.15) rotate(-8deg); opacity: 1; } 100% { transform: scale(1) rotate(-8deg); opacity: 1; } }
+.lb-tile.wc { animation: lb-win .7s ease infinite alternate; }
+@keyframes lb-win { from { filter: brightness(1); } to { filter: brightness(1.4); } }
+
+/* VRIJ-vakje */
+.lb-tile--free {
+  cursor: default; gap: 3px; border: 2.5px solid #fff; padding: 4px;
+  background: linear-gradient(150deg, #FFD27A, var(--lb-amber)); box-shadow: 0 7px 18px rgba(220,150,30,.42);
+}
+.lb-tile--free::before { content: ""; position: absolute; inset: 0; background: radial-gradient(circle at 30% 15%, rgba(255,255,255,.4), transparent 55%); }
+.lb-tile--free svg { position: relative; z-index: 2; fill: #fff; stroke: #fff; }
+.lb-tile--free span { position: relative; z-index: 2; font-family: 'Fredoka', sans-serif; font-weight: 700; letter-spacing: .12em; color: #fff; text-shadow: 0 1px 2px rgba(180,110,10,.45); }
+
+/* ── In-game pill-knoppen ── */
+.lb-btn { display: inline-flex; align-items: center; gap: 5px; padding: 8px 11px; border-radius: 13px; background: #fff; border: 1.5px solid var(--lb-line); box-shadow: 0 3px 7px rgba(150,90,30,.08); font-family: 'Fredoka', sans-serif; font-weight: 500; font-size: 13px; color: #3A2C1C; cursor: pointer; white-space: nowrap; }
+.lb-btn:active { transform: scale(.96); }
+.lb-btn svg { width: 15px; height: 15px; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.lb-btn--score svg { stroke: var(--lb-orange); stroke-width: 2.2; }
+.lb-btn--photo svg { stroke: var(--lb-teal); }
+.lb-btn--stop { background: #FBE4E4; border-color: #F2C9C9; color: #B3414B; }
+.lb-btn--stop svg { stroke: #B3414B; stroke-width: 2.4; }
+
+/* ── Timer ── */
+#tbar.lb-timer { display: flex; align-items: center; gap: 12px; background: #fff; border: none; border-radius: 18px; padding: 12px 14px; box-shadow: 0 4px 12px rgba(150,90,30,.08); margin-bottom: 8px; }
+.lb-timer__time { font-family: 'Fredoka', sans-serif; font-weight: 700; font-size: 24px; color: #241B12; font-variant-numeric: tabular-nums; min-width: 64px; }
+#ttrack.lb-timer__track { flex: 1; height: 14px; border-radius: 99px; background: #F4E7D6; overflow: hidden; box-shadow: inset 0 1px 3px rgba(150,90,30,.18); }
+#tfill.lb-timer__fill { height: 100%; border-radius: 99px; background-image: repeating-linear-gradient(115deg, rgba(255,255,255,.28) 0 7px, transparent 7px 14px), linear-gradient(90deg, var(--lb-amber), var(--lb-orange)); background-size: 28px 100%, 100% 100%; animation: lb-shine 1s linear infinite; transition: width .5s linear; }
+.lb-timer__label { font-family: 'Nunito', sans-serif; font-weight: 700; font-size: 13px; color: var(--lb-muted); white-space: nowrap; }
+@keyframes lb-shine { from { background-position: 0 0; } to { background-position: 28px 0; } }
+
+/* ── Teamchips ── */
+.chips { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 10px; }
+.lb-team { flex: 1 1 auto; min-width: 0; display: flex; align-items: center; justify-content: center; gap: 9px; padding: 10px 12px; border-radius: 14px; font-family: 'Fredoka', sans-serif; font-weight: 600; font-size: 15px; }
+.lb-team__name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.lb-team__count { flex-shrink: 0; min-width: 24px; height: 24px; padding: 0 7px; border-radius: 99px; background: rgba(255,255,255,.2); display: grid; place-items: center; font-weight: 700; font-size: 13px; color: #fff; }
+
+/* ── Spelheader (modus-badge + naam) ── */
+.game-topbar { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
+#mlbl { display: flex; align-items: center; gap: 9px; }
+#mlbl .lb-mname { font-family: 'Fredoka', sans-serif; font-weight: 600; font-size: 19px; color: var(--lb-ink); }
