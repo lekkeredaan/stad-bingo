@@ -701,3 +701,59 @@ body { background: linear-gradient(180deg, var(--lb-bg-1), var(--lb-bg-2) 40%); 
 .game-topbar { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
 #mlbl { display: flex; align-items: center; gap: 9px; }
 #mlbl .lb-mname { font-family: 'Fredoka', sans-serif; font-weight: 600; font-size: 19px; color: var(--lb-ink); }
+
+/* ════════ HOME / STARTSCHERM ════════ */
+.lb-home { position: relative; overflow: hidden; }
+.lb-confetti { position: absolute; opacity: .45; pointer-events: none; }
+.lb-cta {
+  position: relative; display: flex; align-items: center; justify-content: center; gap: 12px;
+  padding: 19px; border-radius: 22px; cursor: pointer; width: 100%;
+  background: linear-gradient(150deg, #F0A92B, var(--lb-orange)); border: 3px solid #fff;
+  box-shadow: 0 12px 24px rgba(220,120,20,.34), inset 0 -3px 0 rgba(0,0,0,.08);
+}
+.lb-cta:active { transform: scale(.98); }
+.lb-cta__icon { width: 34px; height: 34px; border-radius: 11px; background: rgba(255,255,255,.22); display: grid; place-items: center; transform: rotate(-5deg); flex: none; }
+.lb-cta__icon svg { width: 20px; height: 20px; fill: none; stroke: #fff; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
+.lb-cta__label { font-family: 'Fredoka', sans-serif; font-weight: 600; font-size: 19px; letter-spacing: .02em; color: #fff; text-shadow: 0 1px 2px rgba(170,90,10,.4); }
+.lb-home-actions { position: relative; margin-top: 14px; display: flex; flex-direction: column; gap: 14px; }
+.lb-action { display: flex; align-items: center; gap: 14px; padding: 16px 18px; border-radius: 20px; cursor: pointer; width: 100%; text-align: left; background: #fff; border: 2px solid var(--lb-line); box-shadow: 0 6px 16px rgba(150,90,30,.09); }
+.lb-action:active { transform: scale(.98); }
+.lb-action__badge { width: 42px; height: 42px; border-radius: 14px; flex: none; background: var(--c, var(--lb-teal)); border: 2.5px solid #fff; box-shadow: 0 5px 11px color-mix(in srgb, var(--c, var(--lb-teal)) 36%, transparent), inset 0 -2px 0 rgba(0,0,0,.08); display: grid; place-items: center; transform: rotate(var(--rot, -5deg)); }
+.lb-action__badge svg { width: 22px; height: 22px; fill: none; stroke: #fff; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.lb-action__title { font-family: 'Fredoka', sans-serif; font-weight: 600; font-size: 17px; color: var(--lb-ink); display: block; }
+.lb-action__sub   { font-family: 'Nunito', sans-serif; font-size: 13px; color: var(--lb-muted); display: block; }
+
+/* ════════ LOBBY / WACHTKAMER ════════ */
+.lb-code { font-family: 'Anton', sans-serif; font-size: clamp(40px, 13vw, 52px); letter-spacing: .14em; color: var(--lb-orange); line-height: 1; text-align: center; }
+.lb-pill { display: inline-flex; align-items: center; gap: 7px; padding: 7px 14px; border-radius: 99px; background: var(--lb-tint-cam); border: 1.5px solid #F2D6B2; font-family: 'Nunito', sans-serif; font-weight: 700; font-size: 13px; color: #9A6A2E; }
+.lb-pill svg { width: 15px; height: 15px; fill: none; stroke: #C8853A; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.lb-panel { background: #fff; border-radius: 22px; padding: 18px; box-shadow: 0 6px 18px rgba(150,90,30,.08); margin-bottom: 14px; }
+.lb-panel__label { font-family: 'Space Mono', monospace; font-size: 11px; letter-spacing: .18em; text-transform: uppercase; color: #B79D7E; margin-bottom: 14px; }
+
+.lb-lobbyteam { display: flex; align-items: center; gap: 13px; padding: 13px 14px; border-radius: 16px; margin-bottom: 11px; border: 1.5px solid var(--tc, #ddd); background: var(--tbg, #f6f1ea); }
+.lb-lobbyteam:last-child { margin-bottom: 0; }
+.lb-lobbyteam__badge { width: 34px; height: 34px; border-radius: 11px; flex: none; border: 2px solid #fff; display: grid; place-items: center; transform: rotate(var(--rot, -5deg)); box-shadow: 0 4px 9px var(--glow, rgba(0,0,0,.2)); }
+.lb-lobbyteam__badge svg { width: 18px; height: 18px; fill: none; stroke: #fff; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.lb-lobbyteam__name { font-family: 'Fredoka', sans-serif; font-weight: 600; font-size: 16px; color: var(--lb-ink); display: block; }
+.lb-lobbyteam__sub  { font-family: 'Nunito', sans-serif; font-size: 12px; color: var(--lb-muted); display: block; }
+
+.lb-input { padding: 13px 15px; border-radius: 14px; background: var(--lb-card); border: 1.5px solid var(--lb-line); font-family: 'Fredoka', sans-serif; font-size: 17px; color: var(--lb-ink); width: 100%; }
+.lb-input:focus { outline: none; border-color: var(--lb-amber); }
+
+.lb-pick { display: flex; align-items: center; gap: 11px; padding: 13px 14px; border-radius: 14px; cursor: pointer; border: 2.5px solid transparent; margin-bottom: 9px; width: 100%; font: inherit; box-shadow: 0 6px 14px var(--glow, rgba(0,0,0,.18)); }
+.lb-pick:last-child { margin-bottom: 0; }
+.lb-pick__dot { width: 13px; height: 13px; border-radius: 50%; flex: none; }
+.lb-pick__name { font-family: 'Fredoka', sans-serif; font-weight: 600; font-size: 15px; flex: 1; text-align: left; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.lb-pick.sel-team { border-color: var(--lb-amber); }
+.lb-pick__check { margin-left: auto; width: 18px; height: 18px; display: none; flex: none; }
+.lb-pick.sel-team .lb-pick__check { display: block; }
+.lb-pick__check svg { fill: none; stroke: var(--lb-amber); stroke-width: 2.8; stroke-linecap: round; stroke-linejoin: round; }
+
+.lb-status { margin-top: 11px; display: flex; align-items: center; gap: 6px; font-family: 'Nunito', sans-serif; font-weight: 700; font-size: 13px; color: var(--lb-green); }
+.lb-status svg { width: 15px; height: 15px; fill: none; stroke: var(--lb-green); stroke-width: 2.6; stroke-linecap: round; stroke-linejoin: round; }
+.lb-status--warn { color: #C0392B; }
+.lb-status--warn svg { stroke: #C0392B; }
+
+.lb-leave { display: flex; align-items: center; justify-content: center; gap: 9px; padding: 14px; border-radius: 18px; width: 100%; background: #fff; border: 2px solid var(--lb-line); box-shadow: 0 4px 12px rgba(150,90,30,.07); cursor: pointer; font-family: 'Fredoka', sans-serif; font-weight: 500; font-size: 16px; color: var(--lb-muted); }
+.lb-leave:active { transform: scale(.98); }
+.lb-leave svg { width: 17px; height: 17px; fill: none; stroke: var(--lb-muted); stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }

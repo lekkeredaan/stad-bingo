@@ -32,6 +32,12 @@
     <symbol id="lb-seal" viewBox="0 0 24 24"><path d="M8 12.2l2.6 2.6L16.2 8.6"/></symbol>
     <symbol id="lb-bars" viewBox="0 0 24 24"><path d="M5 20v-5M12 20V6M19 20v-8"/></symbol>
     <symbol id="lb-x" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18"/></symbol>
+    <symbol id="lb-enter" viewBox="0 0 24 24"><path d="M14 4h4a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-4"/><path d="M10 8l4 4-4 4M14 12H3"/></symbol>
+    <symbol id="lb-grid" viewBox="0 0 24 24"><rect x="4" y="4" width="7" height="7" rx="1.6"/><rect x="13" y="4" width="7" height="7" rx="1.6"/><rect x="4" y="13" width="7" height="7" rx="1.6"/><rect x="13" y="13" width="7" height="7" rx="1.6"/></symbol>
+    <symbol id="lb-play" viewBox="0 0 24 24"><path d="M7 4.5v15l12-7.5Z"/></symbol>
+    <symbol id="lb-exit" viewBox="0 0 24 24"><path d="M14 12H4M8 8l-4 4 4 4"/><path d="M10 4h7a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-7"/></symbol>
+    <symbol id="lb-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/></symbol>
+    <symbol id="lb-user" viewBox="0 0 24 24"><circle cx="12" cy="8" r="3.4"/><path d="M5.5 19.5c0-3.4 2.9-5.5 6.5-5.5s6.5 2.1 6.5 5.5"/></symbol>
   </defs>
 </svg>
 
@@ -39,20 +45,29 @@
 
   <!-- ── Home screen ── -->
   <div id="home" class="screen active">
-    <header class="setup-header">
-      <h1 class="lb-logo"><span class="l1">LOCKOUT</span><span class="l2">BINGO</span></h1>
-      <p class="setup-sub">Verken de stad — claim opdrachten — win</p>
-    </header>
-    <div style="display:flex;flex-direction:column;gap:12px;max-width:400px;margin:0 auto;padding-bottom:32px">
-      <button class="btn bp bfull" onclick="showJoinScreen()">
-        <svg width="17" height="17" viewBox="0 0 17 17" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-right:6px"><path d="M10 2.5h4a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1h-4"/><path d="M7 11.5L11 8.5 7 5.5"/><line x1="11" y1="8.5" x2="2" y2="8.5"/></svg>MEEDOEN MET CODE
+    <div class="lb-home" style="max-width:430px;margin:0 auto;padding:34px 6px 28px">
+      <svg class="lb-confetti" style="left:18px;top:96px;transform:rotate(-12deg);fill:var(--lb-amber)" width="30" height="30" viewBox="0 0 24 24"><use href="#lb-spark"/></svg>
+      <svg class="lb-confetti" style="right:22px;top:74px;transform:rotate(14deg);fill:var(--lb-teal)" width="22" height="22" viewBox="0 0 24 24"><use href="#lb-star"/></svg>
+      <svg class="lb-confetti" style="right:40px;top:288px;transform:rotate(-8deg);fill:var(--lb-pink)" width="20" height="20" viewBox="0 0 24 24"><use href="#lb-star"/></svg>
+
+      <h1 class="lb-logo" style="line-height:.82"><span class="l1" style="font-size:clamp(46px,16vw,66px)">LOCKOUT</span><span class="l2" style="font-size:clamp(34px,12vw,48px)">BINGO</span></h1>
+      <p style="margin:16px 0 0;text-align:center;font-family:'Nunito',sans-serif;font-weight:600;font-size:15px;color:var(--lb-muted)">Verken de stad — claim opdrachten — win</p>
+
+      <button class="lb-cta" style="margin-top:30px" onclick="showJoinScreen()">
+        <span class="lb-cta__icon"><svg viewBox="0 0 24 24"><use href="#lb-enter"/></svg></span>
+        <span class="lb-cta__label">Meedoen met code</span>
       </button>
-      <button class="btn bg2 bfull" onclick="showRedeem()">
-        <svg width="17" height="17" viewBox="0 0 17 17" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-right:6px"><rect x="1.5" y="1.5" width="14" height="14" rx="2.5"/><line x1="6" y1="1.5" x2="6" y2="15.5"/><line x1="11" y1="1.5" x2="11" y2="15.5"/><line x1="1.5" y1="6" x2="15.5" y2="6"/><line x1="1.5" y1="11" x2="15.5" y2="11"/><circle cx="3.7" cy="3.7" r="1" fill="currentColor" stroke="none"/><circle cx="8.5" cy="8.5" r="1" fill="currentColor" stroke="none"/><circle cx="13.3" cy="13.3" r="1" fill="currentColor" stroke="none"/></svg>NIEUW SPEL AANMAKEN
-      </button>
-      <button class="btn bg2 bfull" onclick="toggleHelp()" style="opacity:.7">
-        <svg width="17" height="17" viewBox="0 0 17 17" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-right:6px"><circle cx="8.5" cy="8.5" r="7"/><path d="M8.5 11.5v.5"/><path d="M6.5 6.5a2 2 0 0 1 3.9.7c0 1.3-1.9 1.8-1.9 3"/></svg>HOE WERKT HET?
-      </button>
+
+      <div class="lb-home-actions">
+        <button class="lb-action" onclick="showRedeem()">
+          <span class="lb-action__badge" style="--c:var(--lb-teal);--rot:-5deg"><svg viewBox="0 0 24 24"><use href="#lb-grid"/></svg></span>
+          <span><span class="lb-action__title">Nieuw spel aanmaken</span><span class="lb-action__sub">Maak een bord en nodig je team uit</span></span>
+        </button>
+        <button class="lb-action" onclick="toggleHelp()">
+          <span class="lb-action__badge" style="--c:var(--lb-purple);--rot:5deg"><svg viewBox="0 0 24 24"><use href="#lb-ask"/></svg></span>
+          <span><span class="lb-action__title">Hoe werkt het?</span><span class="lb-action__sub">In 30 seconden uitgelegd</span></span>
+        </button>
+      </div>
     </div>
   </div>
 
@@ -160,27 +175,31 @@
 
   <!-- ── Wait / lobby screen ── -->
   <div id="wait" class="screen">
-    <header class="setup-header">
-      <div class="setup-title" id="waitCode" style="letter-spacing:8px;font-size:36px;color:var(--acc)"></div>
-      <p class="setup-sub" id="waitSub"></p>
-    </header>
-    <div style="font-size:11px;color:var(--muted);text-align:center;margin:-4px 0 12px">
-      ⏱ Deze lobby is 72 uur geldig
+    <div class="lb-home" style="max-width:430px;margin:0 auto;padding:30px 6px 24px">
+      <div style="text-align:center">
+        <div class="lb-code" id="waitCode"></div>
+        <p class="setup-sub" id="waitSub" style="margin:10px 0 0"></p>
+        <div class="lb-pill" style="margin-top:14px"><svg viewBox="0 0 24 24"><use href="#lb-clock"/></svg>Deze lobby is 72 uur geldig</div>
+      </div>
+
+      <div class="lb-panel" style="margin-top:22px">
+        <div class="lb-panel__label">Teams in de lobby</div>
+        <div id="waitPlayers"></div>
+      </div>
+
+      <div class="lb-panel" id="hostJoinCard">
+        <div class="lb-panel__label">Jouw naam &amp; team</div>
+        <input type="text" id="hostName" class="lb-input" placeholder="Je naam" maxlength="20" style="margin-bottom:11px">
+        <div id="hostTeamList"></div>
+        <div id="hostJoinErr" class="lb-status lb-status--warn" style="display:none"></div>
+      </div>
+
+      <button class="lb-cta" id="waitStartBtn" onclick="hostStartGame()">
+        <span class="lb-cta__icon"><svg viewBox="0 0 24 24" style="fill:#fff;stroke:none"><use href="#lb-play"/></svg></span>
+        <span class="lb-cta__label">SPEL STARTEN</span>
+      </button>
+      <button class="lb-leave" onclick="leaveWait()" style="margin-top:11px"><svg viewBox="0 0 24 24"><use href="#lb-exit"/></svg>Verlaten</button>
     </div>
-    <div class="card">
-      <div class="ct">Teams in de lobby</div>
-      <div id="waitPlayers"></div>
-    </div>
-    <div class="card" id="hostJoinCard">
-      <div class="ct">Jouw naam &amp; team</div>
-      <input type="text" id="hostName" placeholder="Je naam" maxlength="20">
-      <div id="hostTeamList" style="margin-top:10px"></div>
-      <div id="hostJoinErr" style="display:none;color:#b23b27;font-size:13px;margin-top:8px"></div>
-    </div>
-    <button class="btn bp bfull" id="waitStartBtn" onclick="hostStartGame()">
-      <svg width="14" height="14" viewBox="0 0 14 14" fill="currentColor" style="vertical-align:middle;margin-right:6px"><path d="M4 2.5l7 4.5-7 4.5z"/></svg>SPEL STARTEN
-    </button>
-    <button class="btn bg2 bfull" onclick="leaveWait()" style="margin-top:6px">← Verlaten</button>
   </div>
 
   <!-- ── Join screen ── -->

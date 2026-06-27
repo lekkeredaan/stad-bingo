@@ -973,20 +973,21 @@ function renderJoinTeams(teams) {
   document.getElementById('joinTeamList').innerHTML   = teams.map((t, i) => {
     const c       = COLS[t.color];
     const members = (t.members || []).join(', ') || 'Nog niemand';
-    return `<div class="join-team" data-idx="${i}"
-               style="border-color:${c.m};background:${c.b}"
-               onclick="selectJoinTeam(this, ${i})">
-              <div class="cd" style="background:${c.m};width:12px;height:12px;flex-shrink:0"></div>
-              <div style="flex:1">
-                <div style="color:${c.l};font-weight:600;font-size:14px">${t.name}</div>
-                <div style="font-size:11px;color:var(--muted);margin-top:2px">${members}</div>
-              </div>
-            </div>`;
+    return `<button type="button" class="lb-pick" data-idx="${i}"
+               style="background:linear-gradient(150deg,${c.m},${c.b});--glow:${c.m}44"
+               onclick="selectJoinTeam(this,${i})">
+              <span class="lb-pick__dot" style="background:${c.l};box-shadow:0 0 0 3px ${c.m}55"></span>
+              <span style="flex:1;min-width:0;text-align:left">
+                <span class="lb-pick__name" style="color:${c.l};display:block">${t.name}</span>
+                <span style="font-family:'Nunito',sans-serif;font-size:11px;color:${c.l};opacity:.8">${members}</span>
+              </span>
+              <span class="lb-pick__check"><svg viewBox="0 0 24 24"><use href="#lb-seal"/></svg></span>
+            </button>`;
   }).join('');
 }
 
 function selectJoinTeam(el, i) {
-  document.querySelectorAll('.join-team').forEach(e => e.classList.remove('sel-team'));
+  document.querySelectorAll('#joinTeamList .lb-pick').forEach(e => e.classList.remove('sel-team'));
   el.classList.add('sel-team');
   document.getElementById('joinTeamList').dataset.sel = i;
 }
@@ -1033,17 +1034,18 @@ function renderHostTeamPicker(teams) {
   list.dataset.sel = '';
   list.innerHTML = teams.map((t, i) => {
     const c = COLS[t.color];
-    return `<div class="join-team" data-idx="${i}"
-               style="border-color:${c.m};background:${c.b}"
+    return `<button type="button" class="lb-pick" data-idx="${i}"
+               style="background:linear-gradient(150deg,${c.m},${c.b});--glow:${c.m}44"
                onclick="selectHostTeam(this,${i})">
-              <div class="cd" style="background:${c.m};width:12px;height:12px;flex-shrink:0"></div>
-              <div style="color:${c.l};font-weight:600;font-size:14px">${t.name}</div>
-            </div>`;
+              <span class="lb-pick__dot" style="background:${c.l};box-shadow:0 0 0 3px ${c.m}55"></span>
+              <span class="lb-pick__name" style="color:${c.l}">${t.name}</span>
+              <span class="lb-pick__check"><svg viewBox="0 0 24 24"><use href="#lb-seal"/></svg></span>
+            </button>`;
   }).join('');
 }
 
 function selectHostTeam(el, i) {
-  document.querySelectorAll('#hostTeamList .join-team').forEach(e => e.classList.remove('sel-team'));
+  document.querySelectorAll('#hostTeamList .lb-pick').forEach(e => e.classList.remove('sel-team'));
   el.classList.add('sel-team');
   document.getElementById('hostTeamList').dataset.sel = i;
 }
@@ -1052,12 +1054,9 @@ function renderWaitPlayers(teams) {
   document.getElementById('waitPlayers').innerHTML = teams.map(t => {
     const c       = COLS[t.color];
     const members = (t.members || []).join(', ') || 'Nog niemand gejoint';
-    return `<div class="pr" style="border-color:${c.m}55">
-              <div class="cd" style="background:${c.m}"></div>
-              <div>
-                <div style="font-weight:700;color:var(--txt);font-size:14px">${t.name}</div>
-                <div style="font-size:12px;color:var(--muted)">${members}</div>
-              </div>
+    return `<div class="lb-lobbyteam" style="--tc:${c.m}40;--tbg:${c.m}12;--glow:${c.m}55">
+              <span class="lb-lobbyteam__badge" style="background:${c.m}"><svg viewBox="0 0 24 24"><use href="#lb-user"/></svg></span>
+              <span><span class="lb-lobbyteam__name">${t.name}</span><span class="lb-lobbyteam__sub">${members}</span></span>
             </div>`;
   }).join('');
 }
