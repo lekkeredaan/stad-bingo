@@ -680,6 +680,7 @@ body { background: linear-gradient(180deg, var(--lb-bg-1), var(--lb-bg-2) 40%); 
 .lb-btn svg { width: 15px; height: 15px; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
 .lb-btn--score svg { stroke: var(--lb-orange); stroke-width: 2.2; }
 .lb-btn--photo svg { stroke: var(--lb-teal); }
+.lb-btn--movie svg { fill: var(--lb-pink); stroke: var(--lb-pink); }
 .lb-btn--stop { background: #FBE4E4; border-color: #F2C9C9; color: #B3414B; }
 .lb-btn--stop svg { stroke: #B3414B; stroke-width: 2.4; }
 
@@ -698,7 +699,8 @@ body { background: linear-gradient(180deg, var(--lb-bg-1), var(--lb-bg-2) 40%); 
 .lb-team__count { flex-shrink: 0; min-width: 24px; height: 24px; padding: 0 7px; border-radius: 99px; background: rgba(255,255,255,.2); display: grid; place-items: center; font-weight: 700; font-size: 13px; color: #fff; }
 
 /* ── Spelheader (modus-badge + naam) ── */
-.game-topbar { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
+.game-topbar { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; flex-wrap: wrap; }
+.game-actions { margin-left: auto; display: flex; gap: 6px; flex-wrap: wrap; justify-content: flex-end; }
 #mlbl { display: flex; align-items: center; gap: 9px; }
 #mlbl .lb-mname { font-family: 'Fredoka', sans-serif; font-weight: 600; font-size: 19px; color: var(--lb-ink); }
 

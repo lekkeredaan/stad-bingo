@@ -1229,6 +1229,20 @@ function updateTimerDisplay(rem, tot) {
   document.getElementById('tlbl').textContent = `${Math.ceil(rem / 60)} min over`;
 }
 
+// Spel handmatig beëindigen (Stop-knop): toont de uitslag + aftermovie, voor iedereen.
+function endGameNow() {
+  if (!gs || gs.over) { resetGame(); return; }
+  gs.over = true;
+  clearInterval(ti);
+  renderGame();
+  const max = Math.max(...gs.players.map(p => p.score));
+  const ws  = gs.players.map((p, i) => ({ ...p, i })).filter(p => p.score === max);
+  const wi  = ws.length === 1 ? ws[0].i : -1;
+  const wr  = ws.length === 1 ? 'Spel gestopt — meeste vakjes wint!' : 'Spel gestopt — gelijkspel!';
+  if (wi >= 0) showWinner(wi, wr); else showTie(wr);
+  syncGameState({ winner: wi, winReason: wr });
+}
+
 function timeUp() {
   gs.over = true;
   renderGame();
