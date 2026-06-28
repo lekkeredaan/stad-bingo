@@ -867,6 +867,7 @@ async function createGame() {
       turn: 0, over: false,
       tm, ts: tm * 60,
       tstart: tm > 0 ? Date.now() : null,
+      pending: {},
     };
     document.getElementById('gal').style.display = 'none';
     showScreen('game');
@@ -1143,6 +1144,7 @@ function onGameData(data) {
         tm,
         ts:      tm * 60,
         tstart:  data.tstart || null,
+        pending: data.pending || {},
       };
       computeScores();
       showScreen('game');
@@ -1154,9 +1156,11 @@ function onGameData(data) {
       gs.cells   = data.cells.map((c, i) => ({ ...c, photo: c.photo || gs.cells[i]?.photo || null }));
       gs.players = data.teams;
       gs.turn    = data.turn;
+      gs.pending = data.pending || {};
       computeScores();
       gs.over    = data.over || data.status === 'over';
       renderGame();
+      if (document.getElementById('rov').classList.contains('show')) renderReview();
 
       if (!wasOver && gs.over) {
         clearInterval(ti);
@@ -1290,6 +1294,15 @@ function renderGame() {
 
   document.getElementById('turnl').innerHTML = '';
 
+  const pendingCount = Object.keys(gs.pending || {}).length;
+  const revBtn = document.getElementById('revBtn');
+  if (isHost && pendingCount > 0) {
+    revBtn.style.display = 'inline-flex';
+    document.getElementById('revCount').textContent = pendingCount;
+  } else {
+    revBtn.style.display = 'none';
+  }
+
   const board = document.getElementById('board');
   const sz    = gs.sz;
   const gapPx = sz >= 6 ? 5 : 8;
@@ -1331,7 +1344,10 @@ function renderGame() {
     const ic = showIcon
       ? `<svg class="lb-tile__icon" viewBox="0 0 24 24" style="width:${Math.round(cp * 0.28)}px;height:${Math.round(cp * 0.28)}px"><use href="#${tt.icon}"/></svg>`
       : '';
-    return `<div class="lb-tile ${tt.cls}" style="width:${cp}px;height:${cp}px" onclick="clickCell(${i})">
+    const isPending  = !!gs.pending?.[i];
+    const pendingTag = isPending ? `<span class="lb-tile__pending"><svg viewBox="0 0 24 24"><use href="#lb-clock"/></svg></span>` : '';
+    return `<div class="lb-tile ${tt.cls}${isPending ? ' is-pending' : ''}" style="width:${cp}px;height:${cp}px" onclick="clickCell(${i})">
+              ${pendingTag}
               ${ic}
               <span class="lb-tile__text" style="font-size:${fs}px">${cell.text}</span>
             </div>`;
@@ -1345,7 +1361,7 @@ function renderGame() {
 function clickCell(i) {
   if (gs.over) return;
   const cell = gs.cells[i];
-  if (cell.free || cell.claimed) return;
+  if (cell.free || cell.claimed || gs.pending?.[i]) return;
 
   pci            = i;
   pendingTeamIdx = -1;
@@ -1500,47 +1516,64 @@ async function confirmClaim() {
   // ── De Rechter beoordeelt (video → stilstaand frame) ────────────────────────
   let verdict = null;
   const judgeImg = mediaType === 'video' ? videoFrameUrl(mediaUrl) : mediaUrl;
-  if (gs.judge && gs.judge !== 'off' && judgeImg) {
+  if ((gs.judge === 'advisory' || gs.judge === 'blocking') && judgeImg) {
     confBtn.textContent = 'Rechter beoordeelt...';
     confBtn.disabled = true;
     verdict = await judgePhoto(gs.cells[i].text, judgeImg);
     confBtn.innerHTML = claimHtml;
     confBtn.disabled = false;
 
-    // Blokkerend + afgekeurd → claim telt niet; toon oordeel, laat modal open
-    if (gs.judge === 'blocking' && verdict && verdict.approved === false) {
+    // Blokkerend + zeker afgekeurd (niet twijfelend) → claim telt niet; toon oordeel
+    if (gs.judge === 'blocking' && verdict && verdict.approved === false && !verdict.uncertain) {
       showVerdict(verdict, true);
       return;
     }
   }
 
-  // ── Race condition guard: verify cell is still unclaimed on the server ──────
+  // ── Goedkeuring nodig? (host-modus, of AI twijfelt in blokkerend-modus) ─────
+  let needHost = false;
+  if (gs.judge === 'host') needHost = true;
+  else if (gs.judge === 'blocking' && verdict?.uncertain) needHost = true;
+  if (needHost && isHost) needHost = false; // de host is zelf de goedkeurder
+
+  // ── Race condition guard: verify cell is still unclaimed/unqueued on the server ──
   if (gameCode) {
     confBtn.textContent = '...';
     confBtn.disabled = true;
     const latest = await fbGet(gameCode);
     confBtn.innerHTML = claimHtml;
     confBtn.disabled = false;
-    if (latest?.cells?.[i]?.claimed) {
+    if (latest?.cells?.[i]?.claimed || latest?.pending?.[i]) {
       closeClaimModal();
-      return; // already taken — silently close, board will sync via SSE
+      return; // already taken/pending — silently close, board will sync via SSE
     }
   }
 
-  const cell   = gs.cells[i];
-  const pi     = pendingTeamIdx;
-  const pn     = pi + 1;
-  const player = gs.players[pi];
+  if (needHost) {
+    const pn = pendingTeamIdx + 1;
+    await submitPending(i, pn, mediaUrl, mediaType, verdict);
+    closeClaimModal();
+    toast('Verstuurd — wacht op goedkeuring van de host.');
+    return;
+  }
 
-  cell.claimed = pn;
-
-  // Bewaar gedeelde media-URL + type
+  const pi = pendingTeamIdx;
+  const pn = pi + 1;
+  const cell = gs.cells[i];
   cell.photo = mediaUrl;
   cell.mtype = mediaType;
   if (verdict) cell.verdict = { score: verdict.score, comment: verdict.comment, approved: verdict.approved !== false };
-  computeScores();
 
   closeClaimModal();
+  await finalizeClaim(i, pn);
+}
+
+// Past een claim toe op een vakje (cell.claimed wordt al elders gezet, incl. photo/mtype/verdict),
+// checkt win/bord-vol en synct naar Firebase. Gebruikt door confirmClaim én approveClaim.
+async function finalizeClaim(i, pn) {
+  const cell = gs.cells[i];
+  cell.claimed = pn;
+  computeScores();
 
   const winLine = checkBingo(pn);
   if (winLine) {
@@ -1548,8 +1581,8 @@ async function confirmClaim() {
     winLine.forEach(x => gs.cells[x].wc = true);
     clearInterval(ti);
     renderGame();
-    showWinner(pi, 'Rij voltooid!');
-    await syncGameState({ winner: pi, winReason: 'Rij voltooid!' });
+    showWinner(pn - 1, 'Rij voltooid!');
+    await syncGameState({ winner: pn - 1, winReason: 'Rij voltooid!' });
     return;
   }
 
@@ -1570,6 +1603,92 @@ async function confirmClaim() {
   const tEl = document.getElementById('board').children[i];
   if (tEl) { tEl.classList.add('lb-pop'); setTimeout(() => tEl.classList.remove('lb-pop'), 460); }
   await syncClaim(i);
+}
+
+// ── Host-goedkeuring (wachtrij) ───────────────────────────────────────────────
+
+async function submitPending(i, team, url, mtype, verdict) {
+  const entry = { cell: i, team, photo: url || null, mtype, verdict: verdict || null };
+  gs.pending = gs.pending || {};
+  gs.pending[i] = entry;
+  renderGame();
+  await fbPatchPath(`games/${gameCode}/pending/${i}`, entry);
+}
+
+function toggleReview() {
+  const el = document.getElementById('rov');
+  const opening = !el.classList.contains('show');
+  if (opening) renderReview();
+  el.classList.toggle('show');
+}
+
+function closeReview() {
+  document.getElementById('rov').classList.remove('show');
+}
+
+function renderReview() {
+  const list = document.getElementById('rlist');
+  const entries = Object.entries(gs.pending || {});
+  if (!entries.length) {
+    list.innerHTML = '<div class="rv-empty">Geen claims om te keuren.</div>';
+    return;
+  }
+  list.innerHTML = entries.map(([i, p]) => {
+    const idx    = +i;
+    const cellTx = gs.cells[idx]?.text || '';
+    const player = gs.players[p.team - 1];
+    const c      = player ? COLS[player.color] : { b: '#eee', l: '#333' };
+    const media  = p.photo
+      ? (p.mtype === 'video'
+          ? `<video src="${p.photo}" controls playsinline preload="metadata"></video>`
+          : `<img src="${p.photo}" alt="bewijsfoto">`)
+      : '';
+    const verdictHtml = p.verdict
+      ? `<div class="rv-verdict">★ ${p.verdict.score}/10${p.verdict.uncertain ? ' — De Rechter twijfelt' : ''} — ${(p.verdict.comment || '').replace(/</g,'&lt;')}</div>`
+      : '';
+    return `<div class="rv-row">
+              <div class="rv-task">${cellTx}</div>
+              <span class="rv-team" style="background:${c.b};color:${c.l}">${player ? player.name : ''}</span>
+              <div class="rv-media">${media}</div>
+              ${verdictHtml}
+              <div class="rv-actions">
+                <button class="btn bg2" onclick="rejectClaim(${idx})">Afwijzen</button>
+                <button class="btn bp" onclick="approveClaim(${idx})">Goedkeuren</button>
+              </div>
+            </div>`;
+  }).join('');
+}
+
+async function approveClaim(i) {
+  const p = gs.pending?.[i];
+  if (!p) return;
+  delete gs.pending[i];
+  const cell = gs.cells[i];
+  cell.photo   = p.photo;
+  cell.mtype   = p.mtype;
+  cell.verdict = p.verdict || null;
+  await fetch(`${DB_URL}/games/${gameCode}/pending/${i}.json`, { method: 'DELETE' });
+  renderReview();
+  await finalizeClaim(i, p.team);
+}
+
+async function rejectClaim(i) {
+  if (!gs.pending?.[i]) return;
+  delete gs.pending[i];
+  await fetch(`${DB_URL}/games/${gameCode}/pending/${i}.json`, { method: 'DELETE' });
+  renderGame();
+  renderReview();
+}
+
+// ── Toast ─────────────────────────────────────────────────────────────────────
+
+let toastTimer = null;
+function toast(msg) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.classList.remove('show'), 2500);
 }
 
 function checkBingo(pn) {
@@ -2166,6 +2285,7 @@ async function restoreSession() {
         tm,
         ts:      tm * 60,
         tstart:  data.tstart || null,
+        pending: data.pending || {},
       };
       computeScores();
       document.getElementById('gal').style.display = 'none';
