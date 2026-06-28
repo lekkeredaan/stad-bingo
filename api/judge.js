@@ -18,10 +18,12 @@ Beoordelingsregels:
 - Keur alleen af als de foto duidelijk niets met de opdracht te maken heeft, leeg/zwart is, of overduidelijk vals.
 - "approved" = true betekent: de claim telt.
 - "score" is 1-10 voor de uitvoering (sfeer, creativiteit, duidelijkheid van het bewijs).
+- "uncertain" = true als je het écht niet zeker weet: het bewijs is dubbelzinnig, onduidelijk of je kunt niet goed beoordelen of de opdracht is uitgevoerd. Dan beslist een mens. Gebruik dit alleen bij echte twijfel, niet standaard.
 
 Antwoord ALTIJD exact in dit JSON-formaat, zonder markdown:
 {
   "approved": <true of false>,
+  "uncertain": <true of false>,
   "score": <getal 1-10>,
   "comment": "<jouw korte oordeel in het Nederlands>"
 }`;
