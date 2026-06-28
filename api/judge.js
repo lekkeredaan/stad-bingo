@@ -77,9 +77,10 @@ export default async function handler(req, res) {
 
     const result = JSON.parse(jsonMatch[0]);
     return res.status(200).json({
-      approved: result.approved !== false,
-      score:    Math.min(10, Math.max(1, Math.round(result.score || 5))),
-      comment:  String(result.comment || '').slice(0, 300),
+      approved:  result.approved !== false,
+      uncertain: result.uncertain === true,
+      score:     Math.min(10, Math.max(1, Math.round(result.score || 5))),
+      comment:   String(result.comment || '').slice(0, 300),
     });
 
   } catch (err) {
