@@ -360,6 +360,7 @@ let isHost      = false;
 let gameStream  = null;
 let redeemCode  = null;   // verzilverde code die dit spel heeft aangemaakt
 let isAdmin     = false;  // masterscode ingevoerd
+let pv          = null;   // bord-voorbeeld (vóór spelstart): { mode, sz, fs, tm, judgeMode, cells, spare }
 
 // ── Scherm navigatie ──────────────────────────────────────────────────────────
 
@@ -382,7 +383,7 @@ function showHome() {
   isAdmin    = false;
   document.getElementById('wov').classList.remove('show');
   document.getElementById('sov').classList.remove('show');
-  document.getElementById('gal').style.display = 'none';
+  document.getElementById('galov').classList.remove('show');
 
   // Verberg de join-knop als Firebase niet is ingesteld
   const joinBtn = document.querySelector('#home .btn.bg2');
@@ -816,22 +817,24 @@ function shuffle(arr) {
 
 // ── Spel aanmaken (host) ──────────────────────────────────────────────────────
 
-async function createGame() {
+// ── Bord voorbereiden (admin-preview vóór spelstart) ──────────────────────────
+
+async function prepareBoard() {
   const mode = getMode();
   const sz   = Math.max(3, Math.min(7, +document.getElementById('gsz').value || 5));
   const fs   = document.getElementById('fsp').checked;
   const need = sz * sz - (fs ? 1 : 0);
-  const pool = mode === 'custom' ? getCustomItems() : [...TASKS[mode]];
+  const rawPool = mode === 'custom' ? getCustomItems() : [...TASKS[mode]];
 
-  if (pool.length < need) {
+  if (rawPool.length < need) {
     const err = document.getElementById('serr');
     err.style.display = 'block';
-    err.textContent   = `Niet genoeg opdrachten! Nodig: ${need}, beschikbaar: ${pool.length}.`;
+    err.textContent   = `Niet genoeg opdrachten! Nodig: ${need}, beschikbaar: ${rawPool.length}.`;
     return;
   }
   document.getElementById('serr').style.display = 'none';
 
-  const btn = document.querySelector('[onclick="createGame()"]');
+  const btn = document.querySelector('[onclick="prepareBoard()"]');
   const btnOrig = btn.innerHTML;
   btn.textContent = 'LOCATIE OPHALEN...';
   btn.disabled    = true;
@@ -839,20 +842,91 @@ async function createGame() {
   btn.innerHTML   = btnOrig;
   btn.disabled    = false;
 
-  const items = shuffle(pool).slice(0, need).map(t => t.replace(/\{stad\}/g, currentCity));
+  const cityPool  = shuffle(rawPool.map(t => t.replace(/\{stad\}/g, currentCity)));
+  const tm        = getTimerMinutes();
+  const judgeMode = document.getElementById('judgeSel')?.value || 'off';
+
+  pv = {
+    mode, sz, fs, tm, judgeMode,
+    cells: cityPool.slice(0, need),
+    spare: cityPool.slice(need),
+  };
+  renderPreview();
+  document.getElementById('pvErr').style.display = 'none';
+  showScreen('preview');
+}
+
+function renderPreview() {
+  const n = pv.spare.length;
+  document.getElementById('pvSpareLbl').textContent = `${n} reserve-opdracht${n === 1 ? '' : 'en'} over`;
+
+  const sz  = pv.sz;
+  const mid = Math.floor(sz / 2);
+  let idx   = 0;
+  const rows = [];
+
+  for (let r = 0; r < sz; r++) {
+    for (let c = 0; c < sz; c++) {
+      const pos = r * sz + c + 1;
+      if (pv.fs && r === mid && c === mid) {
+        rows.push(`<div class="pv-row pv-row--free"><span class="pv-num">${pos}</span><span class="pv-txt">VRIJ vakje</span></div>`);
+        continue;
+      }
+      const cellIdx = idx++;
+      const text    = pv.cells[cellIdx];
+      const tt       = tileType(text);
+      rows.push(`<div class="pv-row">
+                   <span class="pv-num">${pos}</span>
+                   <svg class="pv-ic" viewBox="0 0 24 24"><use href="#${tt.icon}"/></svg>
+                   <span class="pv-txt">${text}</span>
+                   <button class="pv-reroll" onclick="rerollCell(${cellIdx})" ${pv.spare.length === 0 ? 'disabled' : ''} title="Herroll deze opdracht">
+                     <svg viewBox="0 0 24 24"><use href="#lb-dice"/></svg>
+                   </button>
+                 </div>`);
+    }
+  }
+  document.getElementById('pvList').innerHTML = rows.join('');
+}
+
+function rerollCell(i) {
+  if (!pv.spare.length) return;
+  const j = Math.floor(Math.random() * pv.spare.length);
+  const swap = pv.spare[j];
+  pv.spare[j] = pv.cells[i];
+  pv.cells[i] = swap;
+  renderPreview();
+}
+
+function rerollAllPreview() {
+  const need = pv.cells.length;
+  const all  = shuffle([...pv.cells, ...pv.spare]);
+  pv.cells = all.slice(0, need);
+  pv.spare = all.slice(need);
+  renderPreview();
+}
+
+async function confirmBoard() {
+  const { mode, sz, fs, tm, judgeMode } = pv;
+  const mid   = Math.floor(sz / 2);
   const cells = [];
   let idx     = 0;
-  const mid   = Math.floor(sz / 2);
 
   for (let r = 0; r < sz; r++) {
     for (let c = 0; c < sz; c++) {
       if (fs && r === mid && c === mid) cells.push({ text: 'VRIJ', free: true,  claimed: 0, wc: false });
-      else                              cells.push({ text: items[idx++], free: false, claimed: 0, wc: false });
+      else                              cells.push({ text: pv.cells[idx++], free: false, claimed: 0, wc: false });
     }
   }
 
-  const tm = getTimerMinutes();
-  const judgeMode = document.getElementById('judgeSel')?.value || 'off';
+  await finalizeGameCreation(cells, mode, sz, tm, judgeMode);
+}
+
+// ── Spel aanmaken (host) ──────────────────────────────────────────────────────
+
+async function finalizeGameCreation(cells, mode, sz, tm, judgeMode) {
+  const btn = document.querySelector('[onclick="confirmBoard()"]');
+  const btnOrig = btn.innerHTML;
+  const err = document.getElementById('pvErr');
 
   // ── Lokale modus (geen Firebase) ──────────────────────────────────────────
   if (LOCAL_MODE) {
@@ -868,7 +942,6 @@ async function createGame() {
       tm, ts: tm * 60,
       tstart: tm > 0 ? Date.now() : null,
     };
-    document.getElementById('gal').style.display = 'none';
     showScreen('game');
     if (tm > 0 && gs.tstart) startTimer();
     renderGame();
@@ -886,7 +959,6 @@ async function createGame() {
   if (customRaw) {
     if (customRaw.length !== 6) {
       btn.innerHTML = btnOrig; btn.disabled = false;
-      const err = document.getElementById('serr');
       err.style.display = 'block';
       err.textContent   = 'Eigen lobbycode moet precies 6 tekens zijn (letters/cijfers).';
       return;
@@ -895,7 +967,6 @@ async function createGame() {
     const taken = existing && existing.status !== 'over' && (!existing.expiresAt || existing.expiresAt > Date.now());
     if (taken) {
       btn.innerHTML = btnOrig; btn.disabled = false;
-      const err = document.getElementById('serr');
       err.style.display = 'block';
       err.textContent   = 'Deze lobbycode is al in gebruik. Kies een andere.';
       return;
@@ -926,7 +997,6 @@ async function createGame() {
   } catch (e) {
     btn.innerHTML = btnOrig;
     btn.disabled  = false;
-    const err = document.getElementById('serr');
     err.style.display = 'block';
     err.textContent   = 'Verbinding met Firebase mislukt. Controleer je internetverbinding.';
     return;
@@ -1160,8 +1230,8 @@ function onGameData(data) {
 
       if (!wasOver && gs.over) {
         clearInterval(ti);
-        if (data.winner >= 0) showWinner(data.winner, data.winReason);
-        else showTie(data.winReason);
+        if (data.winner >= 0) showWinner(data.winner, data.winReason, data.winIsBingo);
+        else showTie(data.winReason, data.winIsBingo);
       }
     }
   }
@@ -1187,8 +1257,9 @@ async function syncGameState(opts = {}) {
     turn:      gs.turn,
     over:      gs.over,
     status:    gs.over ? 'over' : 'playing',
-    winner:    opts.winner !== undefined ? opts.winner : -1,
-    winReason: opts.winReason || '',
+    winner:     opts.winner !== undefined ? opts.winner : -1,
+    winReason:  opts.winReason || '',
+    winIsBingo: opts.isBingo === true,
   });
 }
 
@@ -1239,8 +1310,8 @@ function endGameNow() {
   const ws  = gs.players.map((p, i) => ({ ...p, i })).filter(p => p.score === max);
   const wi  = ws.length === 1 ? ws[0].i : -1;
   const wr  = ws.length === 1 ? 'Spel gestopt — meeste vakjes wint!' : 'Spel gestopt — gelijkspel!';
-  if (wi >= 0) showWinner(wi, wr); else showTie(wr);
-  syncGameState({ winner: wi, winReason: wr });
+  if (wi >= 0) showWinner(wi, wr, false); else showTie(wr, false);
+  syncGameState({ winner: wi, winReason: wr, isBingo: false });
 }
 
 function timeUp() {
@@ -1249,11 +1320,11 @@ function timeUp() {
   const max     = Math.max(...gs.players.map(p => p.score));
   const winners = gs.players.map((p, i) => ({ ...p, i })).filter(p => p.score === max);
   if (winners.length === 1) {
-    showWinner(winners[0].i, 'Tijd is om! Meeste vakjes wint.');
-    syncGameState({ winner: winners[0].i, winReason: 'Tijd is om! Meeste vakjes wint.' });
+    showWinner(winners[0].i, 'Tijd is om! Meeste vakjes wint.', false);
+    syncGameState({ winner: winners[0].i, winReason: 'Tijd is om! Meeste vakjes wint.', isBingo: false });
   } else {
-    showTie('Tijd is om — gelijkspel!');
-    syncGameState({ winner: -1, winReason: 'Tijd is om — gelijkspel!' });
+    showTie('Tijd is om — gelijkspel!', false);
+    syncGameState({ winner: -1, winReason: 'Tijd is om — gelijkspel!', isBingo: false });
   }
 }
 
@@ -1548,8 +1619,8 @@ async function confirmClaim() {
     winLine.forEach(x => gs.cells[x].wc = true);
     clearInterval(ti);
     renderGame();
-    showWinner(pi, 'Rij voltooid!');
-    await syncGameState({ winner: pi, winReason: 'Rij voltooid!' });
+    showWinner(pi, 'Volledige rij voltooid!', true);
+    await syncGameState({ winner: pi, winReason: 'Volledige rij voltooid!', isBingo: true });
     return;
   }
 
@@ -1560,9 +1631,9 @@ async function confirmClaim() {
     const max = Math.max(...gs.players.map(p => p.score));
     const ws  = gs.players.map((p, x) => ({ ...p, i: x })).filter(p => p.score === max);
     const wi  = ws.length === 1 ? ws[0].i : -1;
-    const wr  = ws.length === 1 ? 'Meeste vakjes!' : 'Gelijkspel!';
-    if (wi >= 0) showWinner(wi, wr); else showTie(wr);
-    await syncGameState({ winner: wi, winReason: wr });
+    const wr  = ws.length === 1 ? 'Bord vol — meeste vakjes wint!' : 'Bord vol — gelijkspel!';
+    if (wi >= 0) showWinner(wi, wr, false); else showTie(wr, false);
+    await syncGameState({ winner: wi, winReason: wr, isBingo: false });
     return;
   }
 
@@ -1594,10 +1665,22 @@ function checkBingo(pn) {
 
 // ── Win / tie ─────────────────────────────────────────────────────────────────
 
-function showWinner(pi, reason) {
+// renderWinBadge: maakt op het eindscherm direct duidelijk of de winst een
+// echte Bingo (volledige rij/kolom/diagonaal) was, of dat het spel om een
+// andere reden afliep (timer/stop/bord vol) — voorkomt verwarring bij spelers
+// die de live-update misten.
+function renderWinBadge(isBingo) {
+  const el = document.getElementById('wbadge');
+  if (isBingo === true)       { el.textContent = '🎉 BINGO!'; el.className = 'is-bingo'; }
+  else if (isBingo === false) { el.textContent = 'GEEN BINGO — EINDSTAND'; el.className = 'is-nobingo'; }
+  else                         { el.textContent = ''; el.className = ''; }
+}
+
+function showWinner(pi, reason, isBingo) {
   clearInterval(ti);
   const p = gs.players[pi];
   const c = COLS[p.color];
+  renderWinBadge(isBingo);
   document.getElementById('wtitle').textContent  = p.name + ' wint!';
   document.getElementById('wtitle').style.color  = c.m;
   document.getElementById('wreason').textContent = reason;
@@ -1612,8 +1695,9 @@ function showWinner(pi, reason) {
   document.getElementById('wov').classList.add('show');
 }
 
-function showTie(msg) {
+function showTie(msg, isBingo) {
   clearInterval(ti);
+  renderWinBadge(isBingo === undefined ? false : isBingo);
   document.getElementById('wtitle').textContent  = 'Gelijkspel!';
   document.getElementById('wtitle').style.color  = '#ffcc00';
   document.getElementById('wreason').textContent = msg || '';
@@ -1670,18 +1754,17 @@ function renderScoreboard() {
 // ── Gallery ───────────────────────────────────────────────────────────────────
 
 function toggleGallery() {
-  const g = document.getElementById('gal');
-  g.style.display = g.style.display === 'none' ? 'block' : 'none';
-  renderGallery();
+  const ov = document.getElementById('galov');
+  const opening = !ov.classList.contains('show');
+  if (opening) renderGallery();
+  ov.classList.toggle('show');
 }
 
-// Vanaf het win-scherm: sluit de overlay en toon de galerij op het spelbord.
+// Vanaf het win-scherm: sluit de overlay en toon de galerij.
 function showGalleryFromWin() {
   document.getElementById('wov').classList.remove('show');
-  const g = document.getElementById('gal');
-  g.style.display = 'block';
   renderGallery();
-  g.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  document.getElementById('galov').classList.add('show');
 }
 
 function renderGallery() {
@@ -1970,6 +2053,33 @@ function updateTrackBtn() {
 function aftermovieTrack() {
   if (!am || !am.audio || !MUSIC.length) return;
   amPlayTrack(amTrack + 1);
+  invalidateRecording();
+}
+
+// De opname (voor download/delen) gebeurt één keer, tijdens een volledige afspeelbeurt.
+// Verander je tussendoor de muziek, dan klopt een eerder gemaakte opname niet meer
+// (download gaf dan altijd de oude track terug) — dus: opname annuleren, vanaf het
+// begin opnieuw afspelen en een nieuwe opname starten met de huidige track.
+function invalidateRecording() {
+  if (!am) return;
+  if (am.recorder && am.recorder.state === 'recording') {
+    am.recorder.onstop = null;
+    try { am.recorder.stop(); } catch {}
+  }
+  am.shareReady = null;
+
+  const ld = document.getElementById('movloading');
+  ld.textContent = 'Muziek gewijzigd — wordt opnieuw afgespeeld om op te nemen…';
+  ld.style.display = 'block';
+  setTimeout(() => { ld.style.display = 'none'; ld.textContent = 'De aftermovie wordt gemaakt…'; }, 1800);
+
+  if (am.raf) cancelAnimationFrame(am.raf);
+  am.frozen  = 0;
+  am.t0      = performance.now();
+  am.playing = true;
+  document.getElementById('movPlay').textContent = '❚❚';
+  amLoop();
+  startAmRecording();
 }
 
 function stopAmAudio() {
@@ -2107,7 +2217,7 @@ function resetGame() {
   pci    = -1;
   photos = {};
   document.getElementById('wov').classList.remove('show');
-  document.getElementById('gal').style.display = 'none';
+  document.getElementById('galov').classList.remove('show');
   showHome();
 }
 
@@ -2168,7 +2278,7 @@ async function restoreSession() {
         tstart:  data.tstart || null,
       };
       computeScores();
-      document.getElementById('gal').style.display = 'none';
+      document.getElementById('galov').classList.remove('show');
       showScreen('game');
       if (tm > 0 && gs.tstart) startTimer();
       renderGame();
