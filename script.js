@@ -972,7 +972,83 @@ function shuffle(arr) {
   return r;
 }
 
-// ── Spel aanmaken (host) ──────────────────────────────────────────────────────
+// ── Bord-samenstelling: koop-limiet + moeilijkheidsgradiënt ───────────────────
+
+// "Koop ..."-opdrachten (aankooptaken) als instructie aan het begin van de tekst.
+// "te koop" middenin een zin (bv. "vind iets te koop") telt niet mee.
+function isKoopTask(text) {
+  return /^koop\b/i.test((text || '').trim());
+}
+
+// Plafond voor het aantal koop-opdrachten op een bord: schaalt licht mee met de
+// bordgrootte, maar blijft altijd beperkt — voorkomt dat een bord (vooral bij
+// eigen opdrachtenlijsten) overspoeld raakt met "Koop ..."-taken.
+function computeMaxKoop(need, koopCount) {
+  if (koopCount === 0) return 0;
+  return Math.min(koopCount, Math.max(1, Math.round(need * 0.08)), 5);
+}
+
+// Kiest `need` opdrachten uit `pool` (tekst-array), met een plafond van `maxKoop`
+// koop-opdrachten. Geeft { chosen, spare } terug (beide tekst-arrays).
+function pickCapped(pool, need, maxKoop) {
+  const koopIdx = [], restIdx = [];
+  pool.forEach((t, i) => (isKoopTask(t) ? koopIdx : restIdx).push(i));
+
+  const koopPick  = shuffle(koopIdx).slice(0, Math.min(maxKoop, koopIdx.length));
+  const restNeed  = need - koopPick.length;
+  let pickedIdx   = [...koopPick, ...shuffle(restIdx).slice(0, Math.min(restNeed, restIdx.length))];
+
+  if (pickedIdx.length < need) {
+    const used = new Set(pickedIdx);
+    const leftoverKoop = koopIdx.filter(i => !used.has(i));
+    pickedIdx = pickedIdx.concat(shuffle(leftoverKoop).slice(0, need - pickedIdx.length));
+  }
+  pickedIdx = shuffle(pickedIdx);
+
+  const pickedSet = new Set(pickedIdx);
+  const chosen = pickedIdx.map(i => pool[i]);
+  const spare  = pool.filter((_, i) => !pickedSet.has(i));
+  return { chosen, spare };
+}
+
+// Schat een moeilijkheidsscore (1 = makkelijk, hoger = pittiger) op taalkenmerken:
+// vraagt het iets van een vreemde, is het een performance/durf-taak, duurt het
+// lang of heeft het meerdere stappen? Geen exacte wetenschap, maar genoeg om de
+// vakjes rond VRIJ pittiger te maken dan de rand van het bord.
+function estimateDifficulty(text) {
+  const t = (text || '').toLowerCase();
+  let score = 1;
+  if (/\b(vraag|overtuig|vreemde|voorbijganger|local)\b/.test(t)) score++;
+  if (/\b(zing|dans|speel|organiseer|interview|show|workout|wedstrijd|optreden|performance|stunt)\b/.test(t)) score++;
+  if (/\b(minuten|seconden|minimaal|drie|vijf|tien|\d+)\b/.test(t)) score++;
+  if (/\b(eet|drink|kus|knuffel|massage|tattoo|shotje|biertje|naakt)\b/.test(t)) score++;
+  if (t.length > 90) score++;
+  return score;
+}
+
+// Legt `items` ({text,diff}) neer op de rij-volgorde van een sz×sz-bord (VRIJ
+// overgeslagen), zodat de hoogste moeilijkheid het dichtst bij het midden komt.
+function arrangeByDifficulty(items, sz, fs) {
+  const mid = Math.floor(sz / 2);
+  const positions = [];
+  let idx = 0;
+  for (let r = 0; r < sz; r++) {
+    for (let c = 0; c < sz; c++) {
+      if (fs && r === mid && c === mid) continue;
+      positions.push({ idx, dist: Math.abs(r - mid) + Math.abs(c - mid) });
+      idx++;
+    }
+  }
+  const byDist = shuffle(positions).sort((a, b) => a.dist - b.dist);
+  const byDiff = shuffle(items).sort((a, b) => b.diff - a.diff);
+  const result = new Array(items.length);
+  byDist.forEach((p, i) => { result[p.idx] = byDiff[i]; });
+  return result;
+}
+
+function wrapWithDifficulty(texts) {
+  return texts.map(text => ({ text, diff: estimateDifficulty(text) }));
+}
 
 // ── Bord voorbereiden (admin-preview vóór spelstart) ──────────────────────────
 
@@ -999,14 +1075,17 @@ async function prepareBoard() {
   btn.innerHTML   = btnOrig;
   btn.disabled    = false;
 
-  const cityPool  = shuffle(rawPool.map(t => t.replace(/\{stad\}/g, currentCity)));
+  const cityPool  = rawPool.map(t => t.replace(/\{stad\}/g, currentCity));
   const tm        = getTimerMinutes();
   const judgeMode = document.getElementById('judgeSel')?.value || 'off';
 
+  const maxKoop = computeMaxKoop(need, cityPool.filter(isKoopTask).length);
+  const { chosen, spare } = pickCapped(cityPool, need, maxKoop);
+
   pv = {
-    mode, sz, fs, tm, judgeMode,
-    cells: cityPool.slice(0, need),
-    spare: cityPool.slice(need),
+    mode, sz, fs, tm, judgeMode, maxKoop,
+    cells: arrangeByDifficulty(wrapWithDifficulty(chosen), sz, fs),
+    spare: wrapWithDifficulty(spare),
   };
   renderPreview();
   document.getElementById('pvErr').style.display = 'none';
@@ -1015,7 +1094,8 @@ async function prepareBoard() {
 
 function renderPreview() {
   const n = pv.spare.length;
-  document.getElementById('pvSpareLbl').textContent = `${n} reserve-opdracht${n === 1 ? '' : 'en'} over`;
+  const koopLbl = pv.maxKoop > 0 ? ` · max ${pv.maxKoop} koopopdracht${pv.maxKoop === 1 ? '' : 'en'}` : '';
+  document.getElementById('pvSpareLbl').textContent = `${n} reserve-opdracht${n === 1 ? '' : 'en'} over${koopLbl}`;
 
   const sz  = pv.sz;
   const mid = Math.floor(sz / 2);
@@ -1030,12 +1110,15 @@ function renderPreview() {
         continue;
       }
       const cellIdx = idx++;
-      const text    = pv.cells[cellIdx];
-      const tt       = tileType(text);
+      const item    = pv.cells[cellIdx];
+      const tt      = tileType(item.text);
+      const dCls    = item.diff <= 1 ? 'pv-diff--light' : item.diff <= 2 ? 'pv-diff--medium' : 'pv-diff--hard';
+      const dLbl    = item.diff <= 1 ? 'licht' : item.diff <= 2 ? 'gemiddeld' : 'pittig';
       rows.push(`<div class="pv-row">
                    <span class="pv-num">${pos}</span>
                    <svg class="pv-ic" viewBox="0 0 24 24"><use href="#${tt.icon}"/></svg>
-                   <span class="pv-txt">${text}</span>
+                   <span class="pv-txt">${item.text}</span>
+                   <span class="pv-diff ${dCls}">${dLbl}</span>
                    <button class="pv-reroll" onclick="rerollCell(${cellIdx})" ${pv.spare.length === 0 ? 'disabled' : ''} title="Herroll deze opdracht">
                      <svg viewBox="0 0 24 24"><use href="#lb-dice"/></svg>
                    </button>
@@ -1047,18 +1130,33 @@ function renderPreview() {
 
 function rerollCell(i) {
   if (!pv.spare.length) return;
-  const j = Math.floor(Math.random() * pv.spare.length);
-  const swap = pv.spare[j];
-  pv.spare[j] = pv.cells[i];
+  const cur = pv.cells[i];
+  const curKoopCount = pv.cells.filter(c => isKoopTask(c.text)).length;
+
+  let candidates = pv.spare.map((c, idx) => idx);
+  if (!isKoopTask(cur.text) && curKoopCount >= pv.maxKoop) {
+    candidates = candidates.filter(idx => !isKoopTask(pv.spare[idx].text));
+  }
+  if (!candidates.length) candidates = pv.spare.map((c, idx) => idx);
+
+  // Kies bij voorkeur een vervanger met een vergelijkbare moeilijkheid, zodat de
+  // gradiënt rond VRIJ niet verdwijnt door losse herrolls.
+  const minDist = Math.min(...candidates.map(idx => Math.abs(pv.spare[idx].diff - cur.diff)));
+  const tied    = candidates.filter(idx => Math.abs(pv.spare[idx].diff - cur.diff) === minDist);
+  const pick    = tied[Math.floor(Math.random() * tied.length)];
+
+  const swap = pv.spare[pick];
+  pv.spare[pick] = cur;
   pv.cells[i] = swap;
   renderPreview();
 }
 
 function rerollAllPreview() {
-  const need = pv.cells.length;
-  const all  = shuffle([...pv.cells, ...pv.spare]);
-  pv.cells = all.slice(0, need);
-  pv.spare = all.slice(need);
+  const need    = pv.cells.length;
+  const allText = [...pv.cells, ...pv.spare].map(c => c.text);
+  const { chosen, spare } = pickCapped(allText, need, pv.maxKoop);
+  pv.cells = arrangeByDifficulty(wrapWithDifficulty(chosen), pv.sz, pv.fs);
+  pv.spare = wrapWithDifficulty(spare);
   renderPreview();
 }
 
@@ -1071,7 +1169,7 @@ async function confirmBoard() {
   for (let r = 0; r < sz; r++) {
     for (let c = 0; c < sz; c++) {
       if (fs && r === mid && c === mid) cells.push({ text: 'VRIJ', free: true,  claimed: 0, wc: false });
-      else                              cells.push({ text: pv.cells[idx++], free: false, claimed: 0, wc: false });
+      else                              cells.push({ text: pv.cells[idx++].text, free: false, claimed: 0, wc: false });
     }
   }
 

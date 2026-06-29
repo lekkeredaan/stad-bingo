@@ -584,6 +584,13 @@ input:focus, select:focus, textarea:focus {
 .pv-reroll svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
 .pv-reroll:active { transform: scale(.93); }
 .pv-reroll:disabled { opacity: .35; cursor: default; }
+.pv-diff {
+  flex-shrink: 0; font-size: 9.5px; font-weight: 700; letter-spacing: 0.04em;
+  text-transform: uppercase; padding: 3px 7px; border-radius: 99px;
+}
+.pv-diff--light  { background: var(--grn-surf); color: #257a4a; }
+.pv-diff--medium { background: var(--surf-deep); color: var(--muted); }
+.pv-diff--hard   { background: var(--red-surf); color: #b23b27; }
 
 /* ── Win/tie badge: bingo of niet ── */
 #wbadge {
