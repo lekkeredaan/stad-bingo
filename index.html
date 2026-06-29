@@ -116,13 +116,17 @@
       <div class="row" style="gap:20px;flex-wrap:wrap">
         <div class="row">
           <span class="settings-label">Bord:</span>
-          <input type="number" id="gsz" value="5" min="3" max="7">
+          <input type="number" id="gsz" value="5" min="3" max="10">
           <span style="color:var(--muted)">×</span>
           <span id="glbl" style="font-family:'Orbitron',monospace;font-size:13px;font-weight:700">5</span>
         </div>
         <div class="row">
           <span class="settings-label">Vrij vakje:</span>
           <input type="checkbox" id="fsp" checked style="width:auto;accent-color:var(--acc);width:16px;height:16px">
+        </div>
+        <div class="row">
+          <span class="settings-label">Geschatte speelduur:</span>
+          <span id="durEst" style="font-size:13px;color:var(--acc);font-weight:600"></span>
         </div>
         <div class="row">
           <span class="settings-label">Timer:</span>

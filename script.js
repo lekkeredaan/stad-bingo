@@ -130,6 +130,24 @@ const TASKS = {
     'Vraag iemand een caféaanbeveling','Foto met grappig opschrift','Vind een straat zonder auto\'s',
     'Foto van jezelf in een spiegelruit','Vind iets oranje','Foto van een kerk of historisch gebouw',
     'Vind een ijskar','Maak een schaduwfoto','Maak een foto van iets symmetrisch',
+    'Vind een speelgoedwinkel','Foto bij een ijssalon','Vind iets met een hartje erop',
+    'Foto van een brandweerauto of politieauto','Vind een muurschildering','Foto met iemand die een bril draagt',
+    'Vind een wenteltrap','Foto van een kerktoren','Vind een dierenwinkel','Foto bij een visvijver',
+    'Vind iets wat drijft op water','Foto van een molen','Vind een speeltuintje met een schommel',
+    'Foto met een opa of oma (vraag het netjes)','Vind een fietsenstalling met minstens 10 fietsen',
+    'Foto van iets met wieltjes erop dat geen voertuig is','Vind een bibliotheek','Foto bij een uitgestald terras',
+    'Vind iets dat naar bloemen ruikt','Foto van een schip of boot','Vind een muur met klimop',
+    'Foto bij een groentenkraam','Vind iemand die honden uitlaat','Foto van een vlag',
+    'Vind een put of brandkraan','Foto bij een markt','Vind een bankje gemaakt van steen',
+    'Foto van een raam met luiken','Vind een speelautomaat','Foto bij een carrousel',
+    'Vind iets dat tikt of piept','Foto van een lantaarnpaal','Vind een straat met kinderhoofdjes (kasseien)',
+    'Foto bij een waterput','Vind een buurtwinkel','Foto van een vogel op een dak',
+    'Vind iets met een pijl erop','Foto bij een speelplek voor peuters','Vind een hek met een hangslot erop',
+    'Foto van twee gebouwen die op elkaar lijken','Vind een trap met meer dan 10 treden',
+    'Foto bij een fontein zonder water','Vind iemand die aan het skaten of fietsen is',
+    'Foto van een huis met een puntdak','Vind een speelgoed dat is achtergelaten op straat',
+    'Foto bij een kringloopwinkel','Vind een straatlamp die nog overdag aan is',
+    'Foto van een geparkeerde caravan','Vind een container met graffiti erop',
   ],
   kids: [
     'Vind een hond en geef hem een aai','Foto van iets roze','Vind een vogel',
@@ -149,6 +167,30 @@ const TASKS = {
     'Doe een handstand ergens','Vind een bushalte','Foto van een tunnel of doorgang',
     'Vind iets met een smiley erop','Foto met iemand die een fiets heeft',
     'Maak een schaduwfiguur','Vind iets glimmends','Foto van iets heel groots','Vind iets met een grappige vorm',
+    'Maak een sprongetje en foto het moment in de lucht','Vind iets dat naar chocolade ruikt',
+    'Doe je beste robotdans','Vind een blaadje in de vorm van een hart',
+    'Maak een grappig geluid en film de reactie van je team','Vind iets wat je kan laten stuiteren',
+    'Doe alsof je een kikker bent en hop drie keer','Vind een steentje dat op een dier lijkt',
+    'Maak een gekke wandeling (zoals een eend)','Vind iets met je lievelingskleur',
+    'Tel hardop tot 10 in een rare stem','Vind een wolk die op iets lijkt en maak een foto',
+    'Doe een dansje met je schaduw','Vind iets dat je kan verzamelen (steentje, blaadje, etc.)',
+    'Maak een knuffelfoto met je team','Vind een vogel en luister naar zijn geluid',
+    'Doe een wedstrijdje hinkelen','Vind iets dat glanst in de zon',
+    'Maak een grappige stem-imitatie','Vind iets met meer dan 4 wielen',
+    'Doe een spinnetje (3 keer ronddraaien) zonder duizelig te worden','Vind een blad dat groter is dan je hand',
+    'Maak een vriendschapsknoop met gras','Vind iets dat je kan ruiken zonder het aan te raken',
+    'Doe een dierengeluid en laat iemand raden welk dier','Vind een wolkenpartij die regen voorspelt',
+    'Maak een toren van steentjes','Vind iets wat je aan het strand zou kunnen vinden',
+    'Doe een gekke groet naar de camera','Vind een huis met een schoorsteen',
+    'Maak een geheime handdruk met je team','Vind iets met vlekken erop',
+    'Doe een wedstrijdje wie het langst op één voet kan staan','Vind een speeltoestel dat draait',
+    'Maak een tekening in het zand of stof','Vind iets dat je kan blazen (zoals een pluisje)',
+    'Doe een mini-theatershow van 10 seconden','Vind een schaduw die op iets lijkt',
+    'Maak een wedstrijdje wie het snelst kan knipogen','Vind een plek waar je kan echoën',
+    'Doe een superheld-pose','Vind iets met een ster erop',
+    'Maak een grappig zelfportret met je vingers','Vind een trap die je kan optellen',
+    'Doe een wedstrijdje wie het langst kan lachen zonder geluid','Vind iets dat naar verf ruikt',
+    'Maak een dansje met alleen je handen','Vind een speeltuin met minstens 3 toestellen',
   ],
   adult18: [
     // Makkelijk
@@ -212,6 +254,9 @@ const TASKS = {
     'Doe 50 push-ups in het openbaar op film',
     'Bouw een zo hoog mogelijke toren van willekeurige spullen',
     'Koop een haring met uitjes op de markt en eet hem ter plekke op',
+    'Vraag een terrasbezoeker om een toost uit te brengen op je team',
+    'Doe een 10 seconden plank in het midden van een drukke straat',
+    'Vraag een vreemde om je groepsfoto te maken terwijl jullie een gekke pose doen met alle teamleden',
     'Roep luid BINGO in een bibliotheek in {stad}',
     'Maak een ritje op een kinderfiets door {stad}',
     'Loop op hakken een drogist binnen en vraag om blarenpleisters',
@@ -279,6 +324,31 @@ const TASKS = {
     'Vind de beste koffie in de buurt','Foto van iets symmetrisch',
     'Vind iemand met een bijzonder verhaal','Foto van stadslichten na zonsondergang',
     'Vind de meest onverwachte winkel','Foto van iets dat je verrast',
+    'Vind een straat met een verrassende naam-geschiedenis','Foto bij het kleinste huis dat je kan vinden',
+    'Vraag een local naar hun favoriete restaurant','Vind een gebouw met een opvallende architectuurstijl',
+    'Foto van een straat versierd met vlaggetjes','Vind een plek met een mooi uitzicht over de stad',
+    'Foto bij een oude lantaarnpaal','Vraag iemand naar de geschiedenis van een gebouw',
+    'Vind een verborgen binnenplaats','Foto van een opvallend dakterras',
+    'Vraag een terrasbezoeker wat ze drinken en waarom','Vind een straat die vernoemd is naar een beroemd persoon',
+    'Foto bij een opvallend uithangbord','Vind een plek waar lokale kunstenaars werk verkopen',
+    'Foto van twee compleet verschillende bouwstijlen naast elkaar','Vraag een fietser naar hun favoriete fietsroute',
+    'Vind een gebouw dat ooit iets anders was','Foto bij een groene gevel',
+    'Vraag een ober naar het populairste gerecht','Vind een straat met een opvallend plaveisel',
+    'Foto van een opvallend balkon','Vraag iemand wat ze het meest waarderen aan deze stad',
+    'Vind een plek met straatmeubilair dat je nog niet zag','Foto bij een oude fabriek of pakhuis',
+    'Vraag een winkelier hoe lang de winkel al bestaat','Vind een plein met een markante naam',
+    'Foto van een opvallend stukje straatkunst','Vraag een local naar een verborgen pareltje van de stad',
+    'Vind een gebouw met een toren of spits','Foto bij een rivier, kanaal of gracht',
+    'Vraag iemand naar hun ochtendroutine in deze stad','Vind een plek die rustiger is dan je verwachtte',
+    'Foto van een opvallend stoeptegelpatroon','Vraag een terraseigenaar naar het beste seizoen om te komen',
+    'Vind een straat zonder winkels','Foto bij een standbeeld van een dier',
+    'Vraag een passant naar een leuke anekdote over de stad','Vind een gebouw met een datum erop gegraveerd',
+    'Foto van een opvallende lantaarn of straatverlichting','Vraag iemand naar het beste uitzichtpunt van de stad',
+    'Vind een plek met een opvallende geur','Foto bij een brug met een naam',
+    'Vraag een local naar hun lievelingsplek om te wandelen','Vind een winkel die al generaties bestaat',
+    'Foto van een opvallend raamkozijn','Vraag iemand wat het grappigste is dat ze hier hebben meegemaakt',
+    'Vind een straat met opvallend veel groen','Foto bij een fontein met een verhaal',
+    'Vraag een local om een woord in het lokale dialect',
   ],
 
   loco: [
@@ -332,6 +402,55 @@ const TASKS = {
     'Leg een vreemde heel serieus uit hoe je loopt — alsof het een complexe vaardigheid is',
     'Zeg "bedankt voor alles" tegen een pinautomaat na het pinnen',
     'Vraag drie verschillende mensen of ze je kunnen helpen je eigen naam te onthouden',
+    'Vraag een vreemde of ze je verloren "denkbeeldige sleutel" hebben gezien',
+    'Doe alsof je een weerman bent en geef live een weerbericht op straat',
+    'Vraag in een winkel of ze "geluid in blik" verkopen',
+    'Loop een rondje om een prullenbak en buig er drie keer voor',
+    'Vertel een vreemde dat hun schaduw vandaag bijzonder goed gevormd is',
+    'Vraag een voorbijganger om mee te doen aan een denkbeeldige quiz',
+    'Doe alsof je zwemt door de lucht voor minstens 20 seconden',
+    'Vraag een winkelier of de vloer vandaag extra glad aanvoelt',
+    'Loop achterstevoren een drukke winkel binnen en weer naar buiten',
+    'Doe een interview met een standbeeld',
+    'Vraag drie mensen op rij hoe ze heten en onthoud niets',
+    'Vertel een vreemde dat je een schat zoekt en vraag om een hint',
+    'Doe alsof een duif je beste vriend is en stel hem voor aan voorbijgangers',
+    'Vraag een vreemde serieus om advies over een niet-bestaand probleem',
+    'Loop tien stappen in slow motion en versnel daarna plotseling',
+    'Doe alsof je een weddenschap hebt verloren en moet nu een dier nadoen',
+    'Vraag een terrasbezoeker of je hun stoel mag "testen" voor 10 seconden',
+    'Vertel een vreemde dat ze op een beroemdheid lijken (verzin wie)',
+    'Doe een dramatische val (veilig!) en herstel je meteen alsof er niets gebeurd is',
+    'Vraag in een bakkerij of ze ook "stilte" verkopen',
+    'Loop een rondje terwijl je een denkbeeldige paraplu vasthoudt, ook al is het droog',
+    'Vraag een vreemde of ze je kunnen helpen herinneren wat je vergeten bent',
+    'Doe alsof je een standbeeld bent voor 30 seconden op een drukke plek',
+    'Vertel iemand dat je een wereldrecord hebt verbroken vandaag (verzin welk)',
+    'Vraag een groep toeristen of je een foto met hen mag maken "voor het nieuws"',
+    'Loop door een straat en groet elke auto als een oude vriend',
+    'Doe alsof je een geheim agent bent die "incognito" een boodschap doet',
+    'Vraag een vreemde om je te helpen een denkbeeldig codewoord te onthouden',
+    'Vertel een verkoper dat je op zoek bent naar "de stilte van de stad" in een potje',
+    'Loop een drukke straat door met je handen in de lucht alsof je gewonnen hebt',
+    'Vraag een vreemde wat de beste manier is om een wolk te vangen',
+    'Doe alsof je oefent voor een dansfilm — midden op straat',
+    'Vertel een vreemde over je (verzonnen) ontmoeting met een beroemdheid hier',
+    'Vraag een vreemde of ze ooit een spook hebben gezien in deze stad',
+    'Loop kriskras over een plein alsof je een ingewikkeld patroon volgt',
+    'Doe alsof je auditie doet voor een mimegroep, midden op straat',
+    'Vraag een ijsverkoper welke smaak het beste past bij "maandagochtend-gevoel"',
+    'Vertel een vreemde dat hun outfit je geluksgetal heeft veranderd',
+    'Loop een rondje om een boom en bedank hem voor de schaduw',
+    'Doe alsof je voor het eerst ooit een deur ziet en bestudeer hem grondig',
+    'Vraag een vreemde of ze je willen helpen een liedje af te maken dat je net verzint',
+    'Vertel een terrasbezoeker dat hun drankje "verdacht goed" ruikt en vraag waarom',
+    'Loop tien meter alsof je op de maan loopt',
+    'Doe een dramatische monoloog tegen een lantaarnpaal',
+    'Vraag in een winkel of ze ook items verkopen die "geluk garanderen"',
+    'Vertel een vreemde dat je stiekem een superkracht hebt — onthul welke',
+    'Loop een drukke straat door alsof je net een marathon hebt gewonnen',
+    'Doe alsof je een schilderij bestudeert, ook als er geen schilderij is',
+    'Vraag een vreemde welke plek in de stad volgens hen \'magisch\' is',
   ],
 };
 
@@ -743,7 +862,9 @@ function initSetup() {
   document.getElementById('gsz').oninput = e => {
     document.getElementById('glbl').textContent = e.target.value;
     updateCustomCount();
+    updateDurationEstimate();
   };
+  document.getElementById('fsp').onchange = updateDurationEstimate;
   document.getElementById('tsel').onchange = e => {
     const c = e.target.value === 'c';
     document.getElementById('tcust').style.display = c ? 'block' : 'none';
@@ -778,6 +899,30 @@ function renderPlayers() {
          : ''}
      </div>`
   ).join('');
+  updateDurationEstimate();
+}
+
+// Schat de speelduur (min) op basis van bordgrootte en teamaantal. Gecalibreerd op
+// terugkoppeling uit de praktijk: 5×5 met 2 teams ≈ 15-30 min, met 3 teams ≈ 30-45 min
+// (meer teams → meer wachten/concurrentie op dezelfde vakjes, dus langere speelduur).
+function estimateDuration(sz, fs, teamCount) {
+  const cells     = sz * sz - (fs ? 1 : 0);
+  const extra     = Math.max(0, teamCount - 2);
+  const lowPerCell  = 0.625 + 0.625 * extra;
+  const highPerCell = 1.25  + 0.625 * extra;
+  return {
+    low:  Math.max(5, Math.round(cells * lowPerCell  / 5) * 5),
+    high: Math.max(10, Math.round(cells * highPerCell / 5) * 5),
+  };
+}
+
+function updateDurationEstimate() {
+  const el = document.getElementById('durEst');
+  if (!el) return;
+  const sz = +document.getElementById('gsz')?.value || 5;
+  const fs = document.getElementById('fsp')?.checked ?? true;
+  const { low, high } = estimateDuration(sz, fs, players.length || 2);
+  el.textContent = `± ${low}-${high} min`;
 }
 
 function addPlayer() {
@@ -833,7 +978,7 @@ function shuffle(arr) {
 
 async function prepareBoard() {
   const mode = getMode();
-  const sz   = Math.max(3, Math.min(7, +document.getElementById('gsz').value || 5));
+  const sz   = Math.max(3, Math.min(10, +document.getElementById('gsz').value || 5));
   const fs   = document.getElementById('fsp').checked;
   const need = sz * sz - (fs ? 1 : 0);
   const rawPool = mode === 'custom' ? getCustomItems() : [...TASKS[mode]];
