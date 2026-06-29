@@ -16,7 +16,7 @@ const VALIDITY_MS  = 72 * HOUR; // codes en lobby's zijn 72 uur geldig na verzil
 // telefoonvideo's werken zonder de ~10MB serverlimiet.
 const CLOUD_NAME    = 'dxgedixra';
 const UPLOAD_PRESET = 'lockout_bingo';
-const MAX_VIDEO_SEC = 60;
+const MAX_VIDEO_SEC = 300; // 5 min — sommige opdrachten duren langer dan een snelle clip
 
 // ── Icon library ──────────────────────────────────────────────────────────────
 
@@ -130,6 +130,24 @@ const TASKS = {
     'Vraag iemand een caféaanbeveling','Foto met grappig opschrift','Vind een straat zonder auto\'s',
     'Foto van jezelf in een spiegelruit','Vind iets oranje','Foto van een kerk of historisch gebouw',
     'Vind een ijskar','Maak een schaduwfoto','Maak een foto van iets symmetrisch',
+    'Vind een speelgoedwinkel','Foto bij een ijssalon','Vind iets met een hartje erop',
+    'Foto van een brandweerauto of politieauto','Vind een muurschildering','Foto met iemand die een bril draagt',
+    'Vind een wenteltrap','Foto van een kerktoren','Vind een dierenwinkel','Foto bij een visvijver',
+    'Vind iets wat drijft op water','Foto van een molen','Vind een speeltuintje met een schommel',
+    'Foto met een opa of oma (vraag het netjes)','Vind een fietsenstalling met minstens 10 fietsen',
+    'Foto van iets met wieltjes erop dat geen voertuig is','Vind een bibliotheek','Foto bij een uitgestald terras',
+    'Vind iets dat naar bloemen ruikt','Foto van een schip of boot','Vind een muur met klimop',
+    'Foto bij een groentenkraam','Vind iemand die honden uitlaat','Foto van een vlag',
+    'Vind een put of brandkraan','Foto bij een markt','Vind een bankje gemaakt van steen',
+    'Foto van een raam met luiken','Vind een speelautomaat','Foto bij een carrousel',
+    'Vind iets dat tikt of piept','Foto van een lantaarnpaal','Vind een straat met kinderhoofdjes (kasseien)',
+    'Foto bij een waterput','Vind een buurtwinkel','Foto van een vogel op een dak',
+    'Vind iets met een pijl erop','Foto bij een speelplek voor peuters','Vind een hek met een hangslot erop',
+    'Foto van twee gebouwen die op elkaar lijken','Vind een trap met meer dan 10 treden',
+    'Foto bij een fontein zonder water','Vind iemand die aan het skaten of fietsen is',
+    'Foto van een huis met een puntdak','Vind een speelgoed dat is achtergelaten op straat',
+    'Foto bij een kringloopwinkel','Vind een straatlamp die nog overdag aan is',
+    'Foto van een geparkeerde caravan','Vind een container met graffiti erop',
   ],
   kids: [
     'Vind een hond en geef hem een aai','Foto van iets roze','Vind een vogel',
@@ -149,6 +167,30 @@ const TASKS = {
     'Doe een handstand ergens','Vind een bushalte','Foto van een tunnel of doorgang',
     'Vind iets met een smiley erop','Foto met iemand die een fiets heeft',
     'Maak een schaduwfiguur','Vind iets glimmends','Foto van iets heel groots','Vind iets met een grappige vorm',
+    'Maak een sprongetje en foto het moment in de lucht','Vind iets dat naar chocolade ruikt',
+    'Doe je beste robotdans','Vind een blaadje in de vorm van een hart',
+    'Maak een grappig geluid en film de reactie van je team','Vind iets wat je kan laten stuiteren',
+    'Doe alsof je een kikker bent en hop drie keer','Vind een steentje dat op een dier lijkt',
+    'Maak een gekke wandeling (zoals een eend)','Vind iets met je lievelingskleur',
+    'Tel hardop tot 10 in een rare stem','Vind een wolk die op iets lijkt en maak een foto',
+    'Doe een dansje met je schaduw','Vind iets dat je kan verzamelen (steentje, blaadje, etc.)',
+    'Maak een knuffelfoto met je team','Vind een vogel en luister naar zijn geluid',
+    'Doe een wedstrijdje hinkelen','Vind iets dat glanst in de zon',
+    'Maak een grappige stem-imitatie','Vind iets met meer dan 4 wielen',
+    'Doe een spinnetje (3 keer ronddraaien) zonder duizelig te worden','Vind een blad dat groter is dan je hand',
+    'Maak een vriendschapsknoop met gras','Vind iets dat je kan ruiken zonder het aan te raken',
+    'Doe een dierengeluid en laat iemand raden welk dier','Vind een wolkenpartij die regen voorspelt',
+    'Maak een toren van steentjes','Vind iets wat je aan het strand zou kunnen vinden',
+    'Doe een gekke groet naar de camera','Vind een huis met een schoorsteen',
+    'Maak een geheime handdruk met je team','Vind iets met vlekken erop',
+    'Doe een wedstrijdje wie het langst op één voet kan staan','Vind een speeltoestel dat draait',
+    'Maak een tekening in het zand of stof','Vind iets dat je kan blazen (zoals een pluisje)',
+    'Doe een mini-theatershow van 10 seconden','Vind een schaduw die op iets lijkt',
+    'Maak een wedstrijdje wie het snelst kan knipogen','Vind een plek waar je kan echoën',
+    'Doe een superheld-pose','Vind iets met een ster erop',
+    'Maak een grappig zelfportret met je vingers','Vind een trap die je kan optellen',
+    'Doe een wedstrijdje wie het langst kan lachen zonder geluid','Vind iets dat naar verf ruikt',
+    'Maak een dansje met alleen je handen','Vind een speeltuin met minstens 3 toestellen',
   ],
   adult18: [
     // Makkelijk
@@ -212,6 +254,9 @@ const TASKS = {
     'Doe 50 push-ups in het openbaar op film',
     'Bouw een zo hoog mogelijke toren van willekeurige spullen',
     'Koop een haring met uitjes op de markt en eet hem ter plekke op',
+    'Vraag een terrasbezoeker om een toost uit te brengen op je team',
+    'Doe een 10 seconden plank in het midden van een drukke straat',
+    'Vraag een vreemde om je groepsfoto te maken terwijl jullie een gekke pose doen met alle teamleden',
     'Roep luid BINGO in een bibliotheek in {stad}',
     'Maak een ritje op een kinderfiets door {stad}',
     'Loop op hakken een drogist binnen en vraag om blarenpleisters',
@@ -279,6 +324,31 @@ const TASKS = {
     'Vind de beste koffie in de buurt','Foto van iets symmetrisch',
     'Vind iemand met een bijzonder verhaal','Foto van stadslichten na zonsondergang',
     'Vind de meest onverwachte winkel','Foto van iets dat je verrast',
+    'Vind een straat met een verrassende naam-geschiedenis','Foto bij het kleinste huis dat je kan vinden',
+    'Vraag een local naar hun favoriete restaurant','Vind een gebouw met een opvallende architectuurstijl',
+    'Foto van een straat versierd met vlaggetjes','Vind een plek met een mooi uitzicht over de stad',
+    'Foto bij een oude lantaarnpaal','Vraag iemand naar de geschiedenis van een gebouw',
+    'Vind een verborgen binnenplaats','Foto van een opvallend dakterras',
+    'Vraag een terrasbezoeker wat ze drinken en waarom','Vind een straat die vernoemd is naar een beroemd persoon',
+    'Foto bij een opvallend uithangbord','Vind een plek waar lokale kunstenaars werk verkopen',
+    'Foto van twee compleet verschillende bouwstijlen naast elkaar','Vraag een fietser naar hun favoriete fietsroute',
+    'Vind een gebouw dat ooit iets anders was','Foto bij een groene gevel',
+    'Vraag een ober naar het populairste gerecht','Vind een straat met een opvallend plaveisel',
+    'Foto van een opvallend balkon','Vraag iemand wat ze het meest waarderen aan deze stad',
+    'Vind een plek met straatmeubilair dat je nog niet zag','Foto bij een oude fabriek of pakhuis',
+    'Vraag een winkelier hoe lang de winkel al bestaat','Vind een plein met een markante naam',
+    'Foto van een opvallend stukje straatkunst','Vraag een local naar een verborgen pareltje van de stad',
+    'Vind een gebouw met een toren of spits','Foto bij een rivier, kanaal of gracht',
+    'Vraag iemand naar hun ochtendroutine in deze stad','Vind een plek die rustiger is dan je verwachtte',
+    'Foto van een opvallend stoeptegelpatroon','Vraag een terraseigenaar naar het beste seizoen om te komen',
+    'Vind een straat zonder winkels','Foto bij een standbeeld van een dier',
+    'Vraag een passant naar een leuke anekdote over de stad','Vind een gebouw met een datum erop gegraveerd',
+    'Foto van een opvallende lantaarn of straatverlichting','Vraag iemand naar het beste uitzichtpunt van de stad',
+    'Vind een plek met een opvallende geur','Foto bij een brug met een naam',
+    'Vraag een local naar hun lievelingsplek om te wandelen','Vind een winkel die al generaties bestaat',
+    'Foto van een opvallend raamkozijn','Vraag iemand wat het grappigste is dat ze hier hebben meegemaakt',
+    'Vind een straat met opvallend veel groen','Foto bij een fontein met een verhaal',
+    'Vraag een local om een woord in het lokale dialect',
   ],
 
   loco: [
@@ -332,6 +402,55 @@ const TASKS = {
     'Leg een vreemde heel serieus uit hoe je loopt — alsof het een complexe vaardigheid is',
     'Zeg "bedankt voor alles" tegen een pinautomaat na het pinnen',
     'Vraag drie verschillende mensen of ze je kunnen helpen je eigen naam te onthouden',
+    'Vraag een vreemde of ze je verloren "denkbeeldige sleutel" hebben gezien',
+    'Doe alsof je een weerman bent en geef live een weerbericht op straat',
+    'Vraag in een winkel of ze "geluid in blik" verkopen',
+    'Loop een rondje om een prullenbak en buig er drie keer voor',
+    'Vertel een vreemde dat hun schaduw vandaag bijzonder goed gevormd is',
+    'Vraag een voorbijganger om mee te doen aan een denkbeeldige quiz',
+    'Doe alsof je zwemt door de lucht voor minstens 20 seconden',
+    'Vraag een winkelier of de vloer vandaag extra glad aanvoelt',
+    'Loop achterstevoren een drukke winkel binnen en weer naar buiten',
+    'Doe een interview met een standbeeld',
+    'Vraag drie mensen op rij hoe ze heten en onthoud niets',
+    'Vertel een vreemde dat je een schat zoekt en vraag om een hint',
+    'Doe alsof een duif je beste vriend is en stel hem voor aan voorbijgangers',
+    'Vraag een vreemde serieus om advies over een niet-bestaand probleem',
+    'Loop tien stappen in slow motion en versnel daarna plotseling',
+    'Doe alsof je een weddenschap hebt verloren en moet nu een dier nadoen',
+    'Vraag een terrasbezoeker of je hun stoel mag "testen" voor 10 seconden',
+    'Vertel een vreemde dat ze op een beroemdheid lijken (verzin wie)',
+    'Doe een dramatische val (veilig!) en herstel je meteen alsof er niets gebeurd is',
+    'Vraag in een bakkerij of ze ook "stilte" verkopen',
+    'Loop een rondje terwijl je een denkbeeldige paraplu vasthoudt, ook al is het droog',
+    'Vraag een vreemde of ze je kunnen helpen herinneren wat je vergeten bent',
+    'Doe alsof je een standbeeld bent voor 30 seconden op een drukke plek',
+    'Vertel iemand dat je een wereldrecord hebt verbroken vandaag (verzin welk)',
+    'Vraag een groep toeristen of je een foto met hen mag maken "voor het nieuws"',
+    'Loop door een straat en groet elke auto als een oude vriend',
+    'Doe alsof je een geheim agent bent die "incognito" een boodschap doet',
+    'Vraag een vreemde om je te helpen een denkbeeldig codewoord te onthouden',
+    'Vertel een verkoper dat je op zoek bent naar "de stilte van de stad" in een potje',
+    'Loop een drukke straat door met je handen in de lucht alsof je gewonnen hebt',
+    'Vraag een vreemde wat de beste manier is om een wolk te vangen',
+    'Doe alsof je oefent voor een dansfilm — midden op straat',
+    'Vertel een vreemde over je (verzonnen) ontmoeting met een beroemdheid hier',
+    'Vraag een vreemde of ze ooit een spook hebben gezien in deze stad',
+    'Loop kriskras over een plein alsof je een ingewikkeld patroon volgt',
+    'Doe alsof je auditie doet voor een mimegroep, midden op straat',
+    'Vraag een ijsverkoper welke smaak het beste past bij "maandagochtend-gevoel"',
+    'Vertel een vreemde dat hun outfit je geluksgetal heeft veranderd',
+    'Loop een rondje om een boom en bedank hem voor de schaduw',
+    'Doe alsof je voor het eerst ooit een deur ziet en bestudeer hem grondig',
+    'Vraag een vreemde of ze je willen helpen een liedje af te maken dat je net verzint',
+    'Vertel een terrasbezoeker dat hun drankje "verdacht goed" ruikt en vraag waarom',
+    'Loop tien meter alsof je op de maan loopt',
+    'Doe een dramatische monoloog tegen een lantaarnpaal',
+    'Vraag in een winkel of ze ook items verkopen die "geluk garanderen"',
+    'Vertel een vreemde dat je stiekem een superkracht hebt — onthul welke',
+    'Loop een drukke straat door alsof je net een marathon hebt gewonnen',
+    'Doe alsof je een schilderij bestudeert, ook als er geen schilderij is',
+    'Vraag een vreemde welke plek in de stad volgens hen \'magisch\' is',
   ],
 };
 
@@ -360,6 +479,7 @@ let isHost      = false;
 let gameStream  = null;
 let redeemCode  = null;   // verzilverde code die dit spel heeft aangemaakt
 let isAdmin     = false;  // masterscode ingevoerd
+let pv          = null;   // bord-voorbeeld (vóór spelstart): { mode, sz, fs, tm, judgeMode, cells, spare }
 
 // ── Scherm navigatie ──────────────────────────────────────────────────────────
 
@@ -382,7 +502,7 @@ function showHome() {
   isAdmin    = false;
   document.getElementById('wov').classList.remove('show');
   document.getElementById('sov').classList.remove('show');
-  document.getElementById('gal').style.display = 'none';
+  document.getElementById('galov').classList.remove('show');
 
   // Verberg de join-knop als Firebase niet is ingesteld
   const joinBtn = document.querySelector('#home .btn.bg2');
@@ -604,6 +724,17 @@ async function uploadPhoto(dataUrl) {
   } catch { return null; }
 }
 
+// Normaliseert kwaliteit/resolutie van geüploade media via een Cloudinary delivery-
+// transformatie (werkt ook bij unsigned uploads — dit zit in de URL, niet in de upload
+// zelf). Voorkomt dat de ene telefoon een muggenbeet van 2MB aflevert en de andere een
+// 4K-bestand van 300MB: alles wordt naar een consistente max-resolutie + auto-kwaliteit
+// gecomprimeerd bij het ophalen.
+function normalizeMediaUrl(url, isVideo) {
+  if (!url) return url;
+  const t = isVideo ? 'q_auto,w_1280,h_1280,c_limit' : 'q_auto,w_1600,h_1600,c_limit';
+  return url.replace('/upload/', `/upload/${t}/`);
+}
+
 // Directe unsigned upload van een foto- of videobestand naar Cloudinary.
 // Geeft { url, type } terug ('image' of 'video'), of null bij fout.
 async function uploadMedia(file) {
@@ -616,7 +747,8 @@ async function uploadMedia(file) {
     if (!res.ok) return null;
     const j = await res.json();
     if (!j.secure_url) return null;
-    return { url: j.secure_url, type: j.resource_type === 'video' ? 'video' : 'image' };
+    const isVideo = j.resource_type === 'video';
+    return { url: normalizeMediaUrl(j.secure_url, isVideo), type: isVideo ? 'video' : 'image' };
   } catch { return null; }
 }
 
@@ -730,7 +862,9 @@ function initSetup() {
   document.getElementById('gsz').oninput = e => {
     document.getElementById('glbl').textContent = e.target.value;
     updateCustomCount();
+    updateDurationEstimate();
   };
+  document.getElementById('fsp').onchange = updateDurationEstimate;
   document.getElementById('tsel').onchange = e => {
     const c = e.target.value === 'c';
     document.getElementById('tcust').style.display = c ? 'block' : 'none';
@@ -765,6 +899,30 @@ function renderPlayers() {
          : ''}
      </div>`
   ).join('');
+  updateDurationEstimate();
+}
+
+// Schat de speelduur (min) op basis van bordgrootte en teamaantal. Gecalibreerd op
+// terugkoppeling uit de praktijk: 5×5 met 2 teams ≈ 15-30 min, met 3 teams ≈ 30-45 min
+// (meer teams → meer wachten/concurrentie op dezelfde vakjes, dus langere speelduur).
+function estimateDuration(sz, fs, teamCount) {
+  const cells     = sz * sz - (fs ? 1 : 0);
+  const extra     = Math.max(0, teamCount - 2);
+  const lowPerCell  = 0.625 + 0.625 * extra;
+  const highPerCell = 1.25  + 0.625 * extra;
+  return {
+    low:  Math.max(5, Math.round(cells * lowPerCell  / 5) * 5),
+    high: Math.max(10, Math.round(cells * highPerCell / 5) * 5),
+  };
+}
+
+function updateDurationEstimate() {
+  const el = document.getElementById('durEst');
+  if (!el) return;
+  const sz = +document.getElementById('gsz')?.value || 5;
+  const fs = document.getElementById('fsp')?.checked ?? true;
+  const { low, high } = estimateDuration(sz, fs, players.length || 2);
+  el.textContent = `± ${low}-${high} min`;
 }
 
 function addPlayer() {
@@ -814,24 +972,102 @@ function shuffle(arr) {
   return r;
 }
 
-// ── Spel aanmaken (host) ──────────────────────────────────────────────────────
+// ── Bord-samenstelling: koop-limiet + moeilijkheidsgradiënt ───────────────────
 
-async function createGame() {
+// "Koop ..."-opdrachten (aankooptaken) als instructie aan het begin van de tekst.
+// "te koop" middenin een zin (bv. "vind iets te koop") telt niet mee.
+function isKoopTask(text) {
+  return /^koop\b/i.test((text || '').trim());
+}
+
+// Plafond voor het aantal koop-opdrachten op een bord: schaalt licht mee met de
+// bordgrootte, maar blijft altijd beperkt — voorkomt dat een bord (vooral bij
+// eigen opdrachtenlijsten) overspoeld raakt met "Koop ..."-taken.
+function computeMaxKoop(need, koopCount) {
+  if (koopCount === 0) return 0;
+  return Math.min(koopCount, Math.max(1, Math.round(need * 0.08)), 5);
+}
+
+// Kiest `need` opdrachten uit `pool` (tekst-array), met een plafond van `maxKoop`
+// koop-opdrachten. Geeft { chosen, spare } terug (beide tekst-arrays).
+function pickCapped(pool, need, maxKoop) {
+  const koopIdx = [], restIdx = [];
+  pool.forEach((t, i) => (isKoopTask(t) ? koopIdx : restIdx).push(i));
+
+  const koopPick  = shuffle(koopIdx).slice(0, Math.min(maxKoop, koopIdx.length));
+  const restNeed  = need - koopPick.length;
+  let pickedIdx   = [...koopPick, ...shuffle(restIdx).slice(0, Math.min(restNeed, restIdx.length))];
+
+  if (pickedIdx.length < need) {
+    const used = new Set(pickedIdx);
+    const leftoverKoop = koopIdx.filter(i => !used.has(i));
+    pickedIdx = pickedIdx.concat(shuffle(leftoverKoop).slice(0, need - pickedIdx.length));
+  }
+  pickedIdx = shuffle(pickedIdx);
+
+  const pickedSet = new Set(pickedIdx);
+  const chosen = pickedIdx.map(i => pool[i]);
+  const spare  = pool.filter((_, i) => !pickedSet.has(i));
+  return { chosen, spare };
+}
+
+// Schat een moeilijkheidsscore (1 = makkelijk, hoger = pittiger) op taalkenmerken:
+// vraagt het iets van een vreemde, is het een performance/durf-taak, duurt het
+// lang of heeft het meerdere stappen? Geen exacte wetenschap, maar genoeg om de
+// vakjes rond VRIJ pittiger te maken dan de rand van het bord.
+function estimateDifficulty(text) {
+  const t = (text || '').toLowerCase();
+  let score = 1;
+  if (/\b(vraag|overtuig|vreemde|voorbijganger|local)\b/.test(t)) score++;
+  if (/\b(zing|dans|speel|organiseer|interview|show|workout|wedstrijd|optreden|performance|stunt)\b/.test(t)) score++;
+  if (/\b(minuten|seconden|minimaal|drie|vijf|tien|\d+)\b/.test(t)) score++;
+  if (/\b(eet|drink|kus|knuffel|massage|tattoo|shotje|biertje|naakt)\b/.test(t)) score++;
+  if (t.length > 90) score++;
+  return score;
+}
+
+// Legt `items` ({text,diff}) neer op de rij-volgorde van een sz×sz-bord (VRIJ
+// overgeslagen), zodat de hoogste moeilijkheid het dichtst bij het midden komt.
+function arrangeByDifficulty(items, sz, fs) {
+  const mid = Math.floor(sz / 2);
+  const positions = [];
+  let idx = 0;
+  for (let r = 0; r < sz; r++) {
+    for (let c = 0; c < sz; c++) {
+      if (fs && r === mid && c === mid) continue;
+      positions.push({ idx, dist: Math.abs(r - mid) + Math.abs(c - mid) });
+      idx++;
+    }
+  }
+  const byDist = shuffle(positions).sort((a, b) => a.dist - b.dist);
+  const byDiff = shuffle(items).sort((a, b) => b.diff - a.diff);
+  const result = new Array(items.length);
+  byDist.forEach((p, i) => { result[p.idx] = byDiff[i]; });
+  return result;
+}
+
+function wrapWithDifficulty(texts) {
+  return texts.map(text => ({ text, diff: estimateDifficulty(text) }));
+}
+
+// ── Bord voorbereiden (admin-preview vóór spelstart) ──────────────────────────
+
+async function prepareBoard() {
   const mode = getMode();
-  const sz   = Math.max(3, Math.min(7, +document.getElementById('gsz').value || 5));
+  const sz   = Math.max(3, Math.min(10, +document.getElementById('gsz').value || 5));
   const fs   = document.getElementById('fsp').checked;
   const need = sz * sz - (fs ? 1 : 0);
-  const pool = mode === 'custom' ? getCustomItems() : [...TASKS[mode]];
+  const rawPool = mode === 'custom' ? getCustomItems() : [...TASKS[mode]];
 
-  if (pool.length < need) {
+  if (rawPool.length < need) {
     const err = document.getElementById('serr');
     err.style.display = 'block';
-    err.textContent   = `Niet genoeg opdrachten! Nodig: ${need}, beschikbaar: ${pool.length}.`;
+    err.textContent   = `Niet genoeg opdrachten! Nodig: ${need}, beschikbaar: ${rawPool.length}.`;
     return;
   }
   document.getElementById('serr').style.display = 'none';
 
-  const btn = document.querySelector('[onclick="createGame()"]');
+  const btn = document.querySelector('[onclick="prepareBoard()"]');
   const btnOrig = btn.innerHTML;
   btn.textContent = 'LOCATIE OPHALEN...';
   btn.disabled    = true;
@@ -839,20 +1075,113 @@ async function createGame() {
   btn.innerHTML   = btnOrig;
   btn.disabled    = false;
 
-  const items = shuffle(pool).slice(0, need).map(t => t.replace(/\{stad\}/g, currentCity));
+  const cityPool  = rawPool.map(t => t.replace(/\{stad\}/g, currentCity));
+  const tm        = getTimerMinutes();
+  const judgeMode = document.getElementById('judgeSel')?.value || 'off';
+
+  const maxKoop = computeMaxKoop(need, cityPool.filter(isKoopTask).length);
+  const { chosen, spare } = pickCapped(cityPool, need, maxKoop);
+
+  pv = {
+    mode, sz, fs, tm, judgeMode, maxKoop,
+    cells: arrangeByDifficulty(wrapWithDifficulty(chosen), sz, fs),
+    spare: wrapWithDifficulty(spare),
+  };
+  renderPreview();
+  document.getElementById('pvErr').style.display = 'none';
+  showScreen('preview');
+}
+
+function renderPreview() {
+  const n = pv.spare.length;
+  const koopLbl = pv.maxKoop > 0 ? ` · max ${pv.maxKoop} koopopdracht${pv.maxKoop === 1 ? '' : 'en'}` : '';
+  document.getElementById('pvSpareLbl').textContent = `${n} reserve-opdracht${n === 1 ? '' : 'en'} over${koopLbl}`;
+
+  const sz  = pv.sz;
+  const mid = Math.floor(sz / 2);
+  let idx   = 0;
+  const rows = [];
+
+  for (let r = 0; r < sz; r++) {
+    for (let c = 0; c < sz; c++) {
+      const pos = r * sz + c + 1;
+      if (pv.fs && r === mid && c === mid) {
+        rows.push(`<div class="pv-row pv-row--free"><span class="pv-num">${pos}</span><span class="pv-txt">VRIJ vakje</span></div>`);
+        continue;
+      }
+      const cellIdx = idx++;
+      const item    = pv.cells[cellIdx];
+      const tt      = tileType(item.text);
+      const dCls    = item.diff <= 1 ? 'pv-diff--light' : item.diff <= 2 ? 'pv-diff--medium' : 'pv-diff--hard';
+      const dLbl    = item.diff <= 1 ? 'licht' : item.diff <= 2 ? 'gemiddeld' : 'pittig';
+      rows.push(`<div class="pv-row">
+                   <span class="pv-num">${pos}</span>
+                   <svg class="pv-ic" viewBox="0 0 24 24"><use href="#${tt.icon}"/></svg>
+                   <span class="pv-txt">${item.text}</span>
+                   <span class="pv-diff ${dCls}">${dLbl}</span>
+                   <button class="pv-reroll" onclick="rerollCell(${cellIdx})" ${pv.spare.length === 0 ? 'disabled' : ''} title="Herroll deze opdracht">
+                     <svg viewBox="0 0 24 24"><use href="#lb-dice"/></svg>
+                   </button>
+                 </div>`);
+    }
+  }
+  document.getElementById('pvList').innerHTML = rows.join('');
+}
+
+function rerollCell(i) {
+  if (!pv.spare.length) return;
+  const cur = pv.cells[i];
+  const curKoopCount = pv.cells.filter(c => isKoopTask(c.text)).length;
+
+  let candidates = pv.spare.map((c, idx) => idx);
+  if (!isKoopTask(cur.text) && curKoopCount >= pv.maxKoop) {
+    candidates = candidates.filter(idx => !isKoopTask(pv.spare[idx].text));
+  }
+  if (!candidates.length) candidates = pv.spare.map((c, idx) => idx);
+
+  // Kies bij voorkeur een vervanger met een vergelijkbare moeilijkheid, zodat de
+  // gradiënt rond VRIJ niet verdwijnt door losse herrolls.
+  const minDist = Math.min(...candidates.map(idx => Math.abs(pv.spare[idx].diff - cur.diff)));
+  const tied    = candidates.filter(idx => Math.abs(pv.spare[idx].diff - cur.diff) === minDist);
+  const pick    = tied[Math.floor(Math.random() * tied.length)];
+
+  const swap = pv.spare[pick];
+  pv.spare[pick] = cur;
+  pv.cells[i] = swap;
+  renderPreview();
+}
+
+function rerollAllPreview() {
+  const need    = pv.cells.length;
+  const allText = [...pv.cells, ...pv.spare].map(c => c.text);
+  const { chosen, spare } = pickCapped(allText, need, pv.maxKoop);
+  pv.cells = arrangeByDifficulty(wrapWithDifficulty(chosen), pv.sz, pv.fs);
+  pv.spare = wrapWithDifficulty(spare);
+  renderPreview();
+}
+
+async function confirmBoard() {
+  const { mode, sz, fs, tm, judgeMode } = pv;
+  const mid   = Math.floor(sz / 2);
   const cells = [];
   let idx     = 0;
-  const mid   = Math.floor(sz / 2);
 
   for (let r = 0; r < sz; r++) {
     for (let c = 0; c < sz; c++) {
       if (fs && r === mid && c === mid) cells.push({ text: 'VRIJ', free: true,  claimed: 0, wc: false });
-      else                              cells.push({ text: items[idx++], free: false, claimed: 0, wc: false });
+      else                              cells.push({ text: pv.cells[idx++].text, free: false, claimed: 0, wc: false });
     }
   }
 
-  const tm = getTimerMinutes();
-  const judgeMode = document.getElementById('judgeSel')?.value || 'off';
+  await finalizeGameCreation(cells, mode, sz, tm, judgeMode);
+}
+
+// ── Spel aanmaken (host) ──────────────────────────────────────────────────────
+
+async function finalizeGameCreation(cells, mode, sz, tm, judgeMode) {
+  const btn = document.querySelector('[onclick="confirmBoard()"]');
+  const btnOrig = btn.innerHTML;
+  const err = document.getElementById('pvErr');
 
   // ── Lokale modus (geen Firebase) ──────────────────────────────────────────
   if (LOCAL_MODE) {
@@ -868,7 +1197,6 @@ async function createGame() {
       tm, ts: tm * 60,
       tstart: tm > 0 ? Date.now() : null,
     };
-    document.getElementById('gal').style.display = 'none';
     showScreen('game');
     if (tm > 0 && gs.tstart) startTimer();
     renderGame();
@@ -886,7 +1214,6 @@ async function createGame() {
   if (customRaw) {
     if (customRaw.length !== 6) {
       btn.innerHTML = btnOrig; btn.disabled = false;
-      const err = document.getElementById('serr');
       err.style.display = 'block';
       err.textContent   = 'Eigen lobbycode moet precies 6 tekens zijn (letters/cijfers).';
       return;
@@ -895,7 +1222,6 @@ async function createGame() {
     const taken = existing && existing.status !== 'over' && (!existing.expiresAt || existing.expiresAt > Date.now());
     if (taken) {
       btn.innerHTML = btnOrig; btn.disabled = false;
-      const err = document.getElementById('serr');
       err.style.display = 'block';
       err.textContent   = 'Deze lobbycode is al in gebruik. Kies een andere.';
       return;
@@ -926,7 +1252,6 @@ async function createGame() {
   } catch (e) {
     btn.innerHTML = btnOrig;
     btn.disabled  = false;
-    const err = document.getElementById('serr');
     err.style.display = 'block';
     err.textContent   = 'Verbinding met Firebase mislukt. Controleer je internetverbinding.';
     return;
@@ -1160,8 +1485,8 @@ function onGameData(data) {
 
       if (!wasOver && gs.over) {
         clearInterval(ti);
-        if (data.winner >= 0) showWinner(data.winner, data.winReason);
-        else showTie(data.winReason);
+        if (data.winner >= 0) showWinner(data.winner, data.winReason, data.winIsBingo);
+        else showTie(data.winReason, data.winIsBingo);
       }
     }
   }
@@ -1187,8 +1512,9 @@ async function syncGameState(opts = {}) {
     turn:      gs.turn,
     over:      gs.over,
     status:    gs.over ? 'over' : 'playing',
-    winner:    opts.winner !== undefined ? opts.winner : -1,
-    winReason: opts.winReason || '',
+    winner:     opts.winner !== undefined ? opts.winner : -1,
+    winReason:  opts.winReason || '',
+    winIsBingo: opts.isBingo === true,
   });
 }
 
@@ -1239,8 +1565,8 @@ function endGameNow() {
   const ws  = gs.players.map((p, i) => ({ ...p, i })).filter(p => p.score === max);
   const wi  = ws.length === 1 ? ws[0].i : -1;
   const wr  = ws.length === 1 ? 'Spel gestopt — meeste vakjes wint!' : 'Spel gestopt — gelijkspel!';
-  if (wi >= 0) showWinner(wi, wr); else showTie(wr);
-  syncGameState({ winner: wi, winReason: wr });
+  if (wi >= 0) showWinner(wi, wr, false); else showTie(wr, false);
+  syncGameState({ winner: wi, winReason: wr, isBingo: false });
 }
 
 function timeUp() {
@@ -1249,11 +1575,11 @@ function timeUp() {
   const max     = Math.max(...gs.players.map(p => p.score));
   const winners = gs.players.map((p, i) => ({ ...p, i })).filter(p => p.score === max);
   if (winners.length === 1) {
-    showWinner(winners[0].i, 'Tijd is om! Meeste vakjes wint.');
-    syncGameState({ winner: winners[0].i, winReason: 'Tijd is om! Meeste vakjes wint.' });
+    showWinner(winners[0].i, 'Tijd is om! Meeste vakjes wint.', false);
+    syncGameState({ winner: winners[0].i, winReason: 'Tijd is om! Meeste vakjes wint.', isBingo: false });
   } else {
-    showTie('Tijd is om — gelijkspel!');
-    syncGameState({ winner: -1, winReason: 'Tijd is om — gelijkspel!' });
+    showTie('Tijd is om — gelijkspel!', false);
+    syncGameState({ winner: -1, winReason: 'Tijd is om — gelijkspel!', isBingo: false });
   }
 }
 
@@ -1548,8 +1874,8 @@ async function confirmClaim() {
     winLine.forEach(x => gs.cells[x].wc = true);
     clearInterval(ti);
     renderGame();
-    showWinner(pi, 'Rij voltooid!');
-    await syncGameState({ winner: pi, winReason: 'Rij voltooid!' });
+    showWinner(pi, 'Volledige rij voltooid!', true);
+    await syncGameState({ winner: pi, winReason: 'Volledige rij voltooid!', isBingo: true });
     return;
   }
 
@@ -1560,9 +1886,9 @@ async function confirmClaim() {
     const max = Math.max(...gs.players.map(p => p.score));
     const ws  = gs.players.map((p, x) => ({ ...p, i: x })).filter(p => p.score === max);
     const wi  = ws.length === 1 ? ws[0].i : -1;
-    const wr  = ws.length === 1 ? 'Meeste vakjes!' : 'Gelijkspel!';
-    if (wi >= 0) showWinner(wi, wr); else showTie(wr);
-    await syncGameState({ winner: wi, winReason: wr });
+    const wr  = ws.length === 1 ? 'Bord vol — meeste vakjes wint!' : 'Bord vol — gelijkspel!';
+    if (wi >= 0) showWinner(wi, wr, false); else showTie(wr, false);
+    await syncGameState({ winner: wi, winReason: wr, isBingo: false });
     return;
   }
 
@@ -1594,10 +1920,22 @@ function checkBingo(pn) {
 
 // ── Win / tie ─────────────────────────────────────────────────────────────────
 
-function showWinner(pi, reason) {
+// renderWinBadge: maakt op het eindscherm direct duidelijk of de winst een
+// echte Bingo (volledige rij/kolom/diagonaal) was, of dat het spel om een
+// andere reden afliep (timer/stop/bord vol) — voorkomt verwarring bij spelers
+// die de live-update misten.
+function renderWinBadge(isBingo) {
+  const el = document.getElementById('wbadge');
+  if (isBingo === true)       { el.textContent = '🎉 BINGO!'; el.className = 'is-bingo'; }
+  else if (isBingo === false) { el.textContent = 'GEEN BINGO — EINDSTAND'; el.className = 'is-nobingo'; }
+  else                         { el.textContent = ''; el.className = ''; }
+}
+
+function showWinner(pi, reason, isBingo) {
   clearInterval(ti);
   const p = gs.players[pi];
   const c = COLS[p.color];
+  renderWinBadge(isBingo);
   document.getElementById('wtitle').textContent  = p.name + ' wint!';
   document.getElementById('wtitle').style.color  = c.m;
   document.getElementById('wreason').textContent = reason;
@@ -1612,8 +1950,9 @@ function showWinner(pi, reason) {
   document.getElementById('wov').classList.add('show');
 }
 
-function showTie(msg) {
+function showTie(msg, isBingo) {
   clearInterval(ti);
+  renderWinBadge(isBingo === undefined ? false : isBingo);
   document.getElementById('wtitle').textContent  = 'Gelijkspel!';
   document.getElementById('wtitle').style.color  = '#ffcc00';
   document.getElementById('wreason').textContent = msg || '';
@@ -1670,18 +2009,17 @@ function renderScoreboard() {
 // ── Gallery ───────────────────────────────────────────────────────────────────
 
 function toggleGallery() {
-  const g = document.getElementById('gal');
-  g.style.display = g.style.display === 'none' ? 'block' : 'none';
-  renderGallery();
+  const ov = document.getElementById('galov');
+  const opening = !ov.classList.contains('show');
+  if (opening) renderGallery();
+  ov.classList.toggle('show');
 }
 
-// Vanaf het win-scherm: sluit de overlay en toon de galerij op het spelbord.
+// Vanaf het win-scherm: sluit de overlay en toon de galerij.
 function showGalleryFromWin() {
   document.getElementById('wov').classList.remove('show');
-  const g = document.getElementById('gal');
-  g.style.display = 'block';
   renderGallery();
-  g.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  document.getElementById('galov').classList.add('show');
 }
 
 function renderGallery() {
@@ -1970,6 +2308,33 @@ function updateTrackBtn() {
 function aftermovieTrack() {
   if (!am || !am.audio || !MUSIC.length) return;
   amPlayTrack(amTrack + 1);
+  invalidateRecording();
+}
+
+// De opname (voor download/delen) gebeurt één keer, tijdens een volledige afspeelbeurt.
+// Verander je tussendoor de muziek, dan klopt een eerder gemaakte opname niet meer
+// (download gaf dan altijd de oude track terug) — dus: opname annuleren, vanaf het
+// begin opnieuw afspelen en een nieuwe opname starten met de huidige track.
+function invalidateRecording() {
+  if (!am) return;
+  if (am.recorder && am.recorder.state === 'recording') {
+    am.recorder.onstop = null;
+    try { am.recorder.stop(); } catch {}
+  }
+  am.shareReady = null;
+
+  const ld = document.getElementById('movloading');
+  ld.textContent = 'Muziek gewijzigd — wordt opnieuw afgespeeld om op te nemen…';
+  ld.style.display = 'block';
+  setTimeout(() => { ld.style.display = 'none'; ld.textContent = 'De aftermovie wordt gemaakt…'; }, 1800);
+
+  if (am.raf) cancelAnimationFrame(am.raf);
+  am.frozen  = 0;
+  am.t0      = performance.now();
+  am.playing = true;
+  document.getElementById('movPlay').textContent = '❚❚';
+  amLoop();
+  startAmRecording();
 }
 
 function stopAmAudio() {
@@ -2107,7 +2472,7 @@ function resetGame() {
   pci    = -1;
   photos = {};
   document.getElementById('wov').classList.remove('show');
-  document.getElementById('gal').style.display = 'none';
+  document.getElementById('galov').classList.remove('show');
   showHome();
 }
 
@@ -2168,7 +2533,7 @@ async function restoreSession() {
         tstart:  data.tstart || null,
       };
       computeScores();
-      document.getElementById('gal').style.display = 'none';
+      document.getElementById('galov').classList.remove('show');
       showScreen('game');
       if (tm > 0 && gs.tstart) startTimer();
       renderGame();
