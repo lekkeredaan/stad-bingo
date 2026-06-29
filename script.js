@@ -16,7 +16,7 @@ const VALIDITY_MS  = 72 * HOUR; // codes en lobby's zijn 72 uur geldig na verzil
 // telefoonvideo's werken zonder de ~10MB serverlimiet.
 const CLOUD_NAME    = 'dxgedixra';
 const UPLOAD_PRESET = 'lockout_bingo';
-const MAX_VIDEO_SEC = 60;
+const MAX_VIDEO_SEC = 300; // 5 min — sommige opdrachten duren langer dan een snelle clip
 
 // ── Icon library ──────────────────────────────────────────────────────────────
 
@@ -605,6 +605,17 @@ async function uploadPhoto(dataUrl) {
   } catch { return null; }
 }
 
+// Normaliseert kwaliteit/resolutie van geüploade media via een Cloudinary delivery-
+// transformatie (werkt ook bij unsigned uploads — dit zit in de URL, niet in de upload
+// zelf). Voorkomt dat de ene telefoon een muggenbeet van 2MB aflevert en de andere een
+// 4K-bestand van 300MB: alles wordt naar een consistente max-resolutie + auto-kwaliteit
+// gecomprimeerd bij het ophalen.
+function normalizeMediaUrl(url, isVideo) {
+  if (!url) return url;
+  const t = isVideo ? 'q_auto,w_1280,h_1280,c_limit' : 'q_auto,w_1600,h_1600,c_limit';
+  return url.replace('/upload/', `/upload/${t}/`);
+}
+
 // Directe unsigned upload van een foto- of videobestand naar Cloudinary.
 // Geeft { url, type } terug ('image' of 'video'), of null bij fout.
 async function uploadMedia(file) {
@@ -617,7 +628,8 @@ async function uploadMedia(file) {
     if (!res.ok) return null;
     const j = await res.json();
     if (!j.secure_url) return null;
-    return { url: j.secure_url, type: j.resource_type === 'video' ? 'video' : 'image' };
+    const isVideo = j.resource_type === 'video';
+    return { url: normalizeMediaUrl(j.secure_url, isVideo), type: isVideo ? 'video' : 'image' };
   } catch { return null; }
 }
 
