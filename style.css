@@ -499,6 +499,49 @@ input:focus, select:focus, textarea:focus {
   font-size: 22px; font-weight: 700;
 }
 
+/* ── Host review overlay ── */
+#rov {
+  display: none; position: fixed; inset: 0;
+  background: rgba(0,0,0,.6);
+  backdrop-filter: blur(6px);
+  z-index: calc(var(--z-win) - 1);
+  align-items: flex-end; justify-content: center; padding: 0;
+}
+#rov.show { display: flex; }
+#rbox {
+  background: var(--surf);
+  border: 1px solid var(--bdr);
+  border-radius: 20px 20px 0 0;
+  width: 100%; max-width: 480px;
+  padding: 20px 18px 32px;
+  max-height: 78dvh; overflow-y: auto;
+}
+.rv-row {
+  border: 1px solid var(--bdr);
+  border-radius: 14px;
+  padding: 12px 13px;
+  margin-bottom: 10px;
+}
+.rv-task   { font-weight: 600; font-size: 14px; margin-bottom: 6px; }
+.rv-team   { display: inline-block; font-size: 11px; font-weight: 600; padding: 2px 9px; border-radius: 99px; margin-bottom: 8px; }
+.rv-media img, .rv-media video { width: 100%; max-height: 220px; object-fit: cover; border-radius: 10px; display: block; background: #000; }
+.rv-verdict { font-size: 12px; margin: 8px 0; padding: 8px 10px; border-radius: 9px; background: var(--lb-tint-find, #E1F1F0); color: var(--txt); line-height: 1.4; }
+.rv-actions { display: flex; gap: 8px; margin-top: 9px; }
+.rv-actions .btn { flex: 1; }
+.rv-empty { color: var(--muted); font-size: 13px; padding: 14px 4px; text-align: center; }
+
+/* ── Toast ── */
+#toast {
+  position: fixed; left: 50%; bottom: 26px; transform: translateX(-50%) translateY(12px);
+  background: #2A2118; color: #FBF4EC;
+  padding: 11px 18px; border-radius: 99px;
+  font-family: 'DM Sans', sans-serif; font-size: 13px; font-weight: 600;
+  box-shadow: 0 10px 28px rgba(0,0,0,.35);
+  opacity: 0; pointer-events: none; transition: opacity .25s ease, transform .25s ease;
+  z-index: var(--z-win); max-width: 88vw; text-align: center;
+}
+#toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
 /* ── Win overlay ── */
 #wov {
   display: none; position: fixed; inset: 0;
@@ -704,6 +747,9 @@ body { background: linear-gradient(180deg, var(--lb-bg-1), var(--lb-bg-2) 40%); 
 
 /* geclaimde tegel — donkere teamtint (leesbaar voor alle 6 kleuren) + stempel */
 .lb-tile.is-claimed { border: none; cursor: default; box-shadow: 0 6px 15px var(--glow, rgba(0,0,0,.3)); }
+.lb-tile.is-pending { opacity: .6; cursor: default; }
+.lb-tile__pending { position: absolute; top: 5px; right: 5px; width: 16px; height: 16px; border-radius: 50%; background: rgba(42,33,24,.78); display: flex; align-items: center; justify-content: center; }
+.lb-tile__pending svg { width: 10px; height: 10px; fill: none; stroke: #FBF4EC; stroke-width: 2; }
 .lb-tile.is-claimed::after { content: ""; position: absolute; inset: 0; background: radial-gradient(circle at 28% 12%, rgba(255,255,255,.14), transparent 60%); pointer-events: none; }
 .lb-tile.is-claimed .lb-tile__icon { display: none; }
 .lb-tile.is-claimed .lb-tile__text { font-weight: 800; }
@@ -736,6 +782,9 @@ body { background: linear-gradient(180deg, var(--lb-bg-1), var(--lb-bg-2) 40%); 
 .lb-btn--movie svg { fill: var(--lb-pink); stroke: var(--lb-pink); }
 .lb-btn--stop { background: #FBE4E4; border-color: #F2C9C9; color: #B3414B; }
 .lb-btn--stop svg { stroke: #B3414B; stroke-width: 2.4; }
+.lb-btn--review { background: #FDF0DA; border-color: #F0D6A0; color: #93651A; }
+.lb-btn--review svg { stroke: #C0820A; }
+.lb-btn--review #revCount { font-family: 'Orbitron', monospace; font-weight: 700; }
 
 /* ── Timer ── */
 #tbar.lb-timer { display: flex; align-items: center; gap: 12px; background: #fff; border: none; border-radius: 18px; padding: 12px 14px; box-shadow: 0 4px 12px rgba(150,90,30,.08); margin-bottom: 8px; }

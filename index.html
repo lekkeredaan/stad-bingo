@@ -151,12 +151,13 @@
         <span class="settings-label">AI-rechter:</span>
         <select id="judgeSel" style="width:auto">
           <option value="off" selected>Uit</option>
-          <option value="advisory">Adviserend (geeft cijfer + commentaar)</option>
-          <option value="blocking">Blokkerend (moet goedkeuren)</option>
+          <option value="host">Host keurt goed</option>
+          <option value="advisory">AI – adviserend (geeft cijfer + commentaar)</option>
+          <option value="blocking">AI – streng (host bij twijfel)</option>
         </select>
       </div>
       <div style="font-size:11px;color:var(--muted);margin-top:6px;line-height:1.45">
-        De Rechter beoordeelt elke foto met AI. <strong>Adviserend</strong>: claim telt altijd, met cijfer + commentaar. <strong>Blokkerend</strong>: de foto moet worden goedgekeurd voordat de claim telt.
+        <strong>Host keurt goed</strong>: elke claim gaat naar de host ter goedkeuring. <strong>AI – adviserend</strong>: De Rechter geeft cijfer + commentaar, claim telt altijd. <strong>AI – streng</strong>: De Rechter keurt goed/af; twijfelt hij, dan beslist de host.
       </div>
     </div>
 
@@ -264,6 +265,7 @@
       <div id="mlbl"></div>
       <div class="game-actions">
         <button class="lb-btn lb-btn--score" onclick="toggleScoreboard()"><svg viewBox="0 0 24 24"><use href="#lb-bars"/></svg>Score</button>
+        <button class="lb-btn lb-btn--review" id="revBtn" onclick="toggleReview()" style="display:none"><svg viewBox="0 0 24 24"><use href="#lb-clock"/></svg>Keuren <span id="revCount">0</span></button>
         <button class="lb-btn lb-btn--photo" onclick="toggleGallery()"><svg viewBox="0 0 24 24"><use href="#lb-cam"/></svg>Foto's</button>
         <button class="lb-btn lb-btn--movie" onclick="openAftermovie()"><svg viewBox="0 0 24 24"><use href="#lb-play"/></svg>Film</button>
         <button class="lb-btn lb-btn--stop"  onclick="if(confirm('Spel beëindigen en de uitslag tonen?'))endGameNow()"><svg viewBox="0 0 24 24"><use href="#lb-x"/></svg>Stop</button>
@@ -375,6 +377,20 @@
     <div class="gg" id="gg"></div>
   </div>
 </div>
+
+<!-- ── Host review overlay ── -->
+<div id="rov" role="dialog" aria-modal="true" onclick="if(event.target===this)toggleReview()">
+  <div id="rbox">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+      <div style="font-family:'Orbitron',monospace;font-size:15px;font-weight:700;letter-spacing:0.05em">CLAIMS KEUREN</div>
+      <button class="btn bg2" style="padding:5px 11px;font-size:11px" onclick="toggleReview()">✕</button>
+    </div>
+    <div id="rlist"></div>
+  </div>
+</div>
+
+<!-- ── Toast ── -->
+<div id="toast"></div>
 
 <!-- ── Win overlay ── -->
 <div id="wov" role="dialog" aria-modal="true" aria-labelledby="win-title">
