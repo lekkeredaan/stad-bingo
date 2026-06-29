@@ -481,6 +481,17 @@ let redeemCode  = null;   // verzilverde code die dit spel heeft aangemaakt
 let isAdmin     = false;  // masterscode ingevoerd
 let pv          = null;   // bord-voorbeeld (vóór spelstart): { mode, sz, fs, tm, judgeMode, cells, spare }
 
+// Stabiel per-browser ID (niet per spel) — gebruikt om captain-rol te claimen,
+// zodat maar één device per team die rol kan hebben.
+const deviceId = (() => {
+  let id = localStorage.getItem('lbDeviceId');
+  if (!id) {
+    id = 'd' + Date.now().toString(36) + Math.random().toString(36).slice(2, 10);
+    localStorage.setItem('lbDeviceId', id);
+  }
+  return id;
+})();
+
 // ── Scherm navigatie ──────────────────────────────────────────────────────────
 
 function showScreen(id) {
@@ -1197,6 +1208,7 @@ async function finalizeGameCreation(cells, mode, sz, tm, judgeMode) {
       tm, ts: tm * 60,
       tstart: tm > 0 ? Date.now() : null,
       pending: {},
+      captains: players.map(() => null),
     };
     showScreen('game');
     if (tm > 0 && gs.tstart) startTimer();
@@ -1244,6 +1256,7 @@ async function finalizeGameCreation(cells, mode, sz, tm, judgeMode) {
       tstart:    0,
       cells,
       teams:     players.map(p => ({ name: p.name, color: p.color, score: 0, members: [] })),
+      captains:  players.map(() => null),
       winner:    -1,
       winReason: '',
       expiresAt,
@@ -1264,6 +1277,7 @@ async function finalizeGameCreation(cells, mode, sz, tm, judgeMode) {
   document.getElementById('waitCode').textContent       = gameCode;
   document.getElementById('waitSub').textContent        = 'Deel deze code met andere spelers';
   document.getElementById('waitStartBtn').style.display = 'block';
+  document.getElementById('hostCaptainRow').style.display = judgeMode === 'captain' ? 'flex' : 'none';
   const initTeams = players.map(p => ({ ...p, members: [] }));
   renderWaitPlayers(initTeams);
   renderHostTeamPicker(initTeams);
@@ -1291,6 +1305,8 @@ async function searchGame() {
 
   gameCode = code;
   renderJoinTeams(data.teams);
+  document.getElementById('joinCaptainRow').style.display = data.judge === 'captain' ? 'flex' : 'none';
+  document.getElementById('joinCaptain').checked = false;
   document.getElementById('joinDetails').style.display = 'block';
 }
 
@@ -1333,6 +1349,11 @@ async function confirmJoin() {
     i === teamIdx ? { ...t, members: [...(t.members || []), name] } : t
   );
   await fbPatch(gameCode, { teams });
+
+  if (data.judge === 'captain' && document.getElementById('joinCaptain').checked) {
+    const ok = await setCaptainClaim(teamIdx, true);
+    if (!ok) toast('Captain-rol van dit team is al ingenomen — je doet wel mee, maar zonder die rol.');
+  }
 
   myTeamIdx = teamIdx;
   isHost    = false;
@@ -1417,6 +1438,11 @@ async function hostStartGame() {
     i === teamIdx ? { ...t, members: [...(t.members || []), name] } : t
   );
 
+  if (data?.judge === 'captain' && document.getElementById('hostCaptain').checked) {
+    const ok = await setCaptainClaim(teamIdx, true);
+    if (!ok) toast('Captain-rol van dit team is al ingenomen — je speelt wel mee, maar zonder die rol.');
+  }
+
   await fbPatch(gameCode, { teams, status: 'playing', tstart: Date.now() });
 
   myTeamIdx       = teamIdx;
@@ -1470,6 +1496,7 @@ function onGameData(data) {
         ts:      tm * 60,
         tstart:  data.tstart || null,
         pending: data.pending || {},
+        captains: data.captains || [],
       };
       computeScores();
       showScreen('game');
@@ -1478,10 +1505,11 @@ function onGameData(data) {
 
     } else if (screen === 'game' && gs) {
       const wasOver = gs.over;
-      gs.cells   = data.cells.map((c, i) => ({ ...c, photo: c.photo || gs.cells[i]?.photo || null }));
-      gs.players = data.teams;
-      gs.turn    = data.turn;
-      gs.pending = data.pending || {};
+      gs.cells    = data.cells.map((c, i) => ({ ...c, photo: c.photo || gs.cells[i]?.photo || null }));
+      gs.players  = data.teams;
+      gs.turn     = data.turn;
+      gs.pending  = data.pending || {};
+      gs.captains = data.captains || [];
       computeScores();
       gs.over    = data.over || data.status === 'over';
       renderGame();
@@ -1620,9 +1648,9 @@ function renderGame() {
 
   document.getElementById('turnl').innerHTML = '';
 
-  const pendingCount = Object.keys(gs.pending || {}).length;
+  const pendingCount = visiblePendingEntries().length;
   const revBtn = document.getElementById('revBtn');
-  if (isHost && pendingCount > 0) {
+  if ((isHost || isCaptainOfTeam(myTeamIdx)) && pendingCount > 0) {
     revBtn.style.display = 'inline-flex';
     document.getElementById('revCount').textContent = pendingCount;
   } else {
@@ -1856,11 +1884,16 @@ async function confirmClaim() {
     }
   }
 
-  // ── Goedkeuring nodig? (host-modus, of AI twijfelt in blokkerend-modus) ─────
-  let needHost = false;
-  if (gs.judge === 'host') needHost = true;
-  else if (gs.judge === 'blocking' && verdict?.uncertain) needHost = true;
-  if (needHost && isHost) needHost = false; // de host is zelf de goedkeurder
+  // ── Goedkeuring nodig? (teamcaptain-modus, of AI twijfelt in blokkerend-modus) ──
+  let needApproval = false;
+  let reviewerIdx  = null;
+  if (gs.judge === 'captain') {
+    needApproval = true;
+    reviewerIdx  = reviewerTeamIdx(pendingTeamIdx, gs.players.length); // nooit het eigen team
+  } else if (gs.judge === 'blocking' && verdict?.uncertain) {
+    needApproval = true; // host beslist bij AI-twijfel (ongewijzigd gedrag)
+    if (isHost) needApproval = false; // de host is zelf de goedkeurder
+  }
 
   // ── Race condition guard: verify cell is still unclaimed/unqueued on the server ──
   if (gameCode) {
@@ -1875,11 +1908,11 @@ async function confirmClaim() {
     }
   }
 
-  if (needHost) {
+  if (needApproval) {
     const pn = pendingTeamIdx + 1;
-    await submitPending(i, pn, mediaUrl, mediaType, verdict);
+    await submitPending(i, pn, mediaUrl, mediaType, verdict, reviewerIdx);
     closeClaimModal();
-    toast('Verstuurd — wacht op goedkeuring van de host.');
+    toast(gs.judge === 'captain' ? 'Verstuurd — wacht op goedkeuring van de teamcaptain.' : 'Verstuurd — wacht op goedkeuring van de host.');
     return;
   }
 
@@ -1931,10 +1964,58 @@ async function finalizeClaim(i, pn) {
   await syncClaim(i);
 }
 
-// ── Host-goedkeuring (wachtrij) ───────────────────────────────────────────────
+// ── Goedkeuring (wachtrij) — teamcaptains of host bij AI-twijfel ─────────────
 
-async function submitPending(i, team, url, mtype, verdict) {
-  const entry = { cell: i, team, photo: url || null, mtype, verdict: verdict || null };
+// Cyclische toewijzing: team i wordt gekeurd door de captain van het volgende
+// team (laatste team rond naar het eerste). Niemand keurt ooit het eigen team.
+function reviewerTeamIdx(teamIdx, numTeams) {
+  return (teamIdx + 1) % numTeams;
+}
+
+function isCaptainOfTeam(teamIdx) {
+  return gs?.captains?.[teamIdx] === deviceId;
+}
+
+// Claimt (of laat los) de captain-rol van een team. Faalt zacht als een ander
+// device deze rol al heeft — geen harde fout, gewoon een toast/melding.
+async function setCaptainClaim(teamIdx, on) {
+  if (!gameCode) return true; // lokale modus: geen Firebase, lokaal altijd toegestaan
+  if (on) {
+    const latest = await fbGetPath(`games/${gameCode}/captains/${teamIdx}`);
+    if (latest && latest !== deviceId) return false;
+  }
+  await fbSetPath(`games/${gameCode}/captains/${teamIdx}`, on ? deviceId : null);
+  return true;
+}
+
+// Mid-game togglen vanuit het scorebord.
+async function toggleCaptain(teamIdx, checked) {
+  const ok = await setCaptainClaim(teamIdx, checked);
+  if (!ok) {
+    toast('Deze rol is al ingenomen door iemand anders in je team.');
+    renderScoreboard();
+    return;
+  }
+  gs.captains = gs.captains || [];
+  gs.captains[teamIdx] = checked ? deviceId : null;
+  renderScoreboard();
+  renderGame();
+}
+
+// Pending-items die DIT device mag keuren: de host ziet alles (vangnet, o.a.
+// AI-twijfel zonder specifieke reviewer), een captain ziet alleen claims van
+// het team waarvoor die als reviewer is toegewezen.
+function visiblePendingEntries() {
+  const entries = Object.entries(gs.pending || {});
+  if (isHost) return entries;
+  if (myTeamIdx >= 0 && isCaptainOfTeam(myTeamIdx)) {
+    return entries.filter(([, p]) => p.reviewer === myTeamIdx);
+  }
+  return [];
+}
+
+async function submitPending(i, team, url, mtype, verdict, reviewer) {
+  const entry = { cell: i, team, photo: url || null, mtype, verdict: verdict || null, reviewer: reviewer ?? null };
   gs.pending = gs.pending || {};
   gs.pending[i] = entry;
   renderGame();
@@ -1954,7 +2035,7 @@ function closeReview() {
 
 function renderReview() {
   const list = document.getElementById('rlist');
-  const entries = Object.entries(gs.pending || {});
+  const entries = visiblePendingEntries();
   if (!entries.length) {
     list.innerHTML = '<div class="rv-empty">Geen claims om te keuren.</div>';
     return;
@@ -2114,11 +2195,19 @@ function renderScoreboard() {
     const c       = COLS[p.color];
     const members = (p.members || []).join(', ');
     const medal   = rank <= 3 ? medals[rank - 1] : `${rank}`;
+    let captainHtml = '';
+    if (gs.judge === 'captain') {
+      const hasCaptain = !!(gs.captains && gs.captains[p.i]);
+      captainHtml = p.i === myTeamIdx
+        ? `<label class="sb-captain"><input type="checkbox" ${isCaptainOfTeam(p.i) ? 'checked' : ''} onchange="toggleCaptain(${p.i}, this.checked)">Ik ben captain</label>`
+        : `<span class="sb-captain-badge ${hasCaptain ? 'is-set' : ''}">${hasCaptain ? '👑 Captain toegewezen' : '⚠ Nog geen captain'}</span>`;
+    }
     return `<div class="sb-row" style="background:${c.b};border-color:${c.m}55">
               <div class="sb-rank">${medal}</div>
               <div style="flex:1;min-width:0">
                 <div class="sb-name" style="color:${c.l}">${p.name}</div>
                 ${members ? `<div class="sb-members">${members}</div>` : ''}
+                ${captainHtml}
               </div>
               <div class="sb-score" style="color:${c.m}">${p.score}</div>
             </div>`;
@@ -2629,6 +2718,7 @@ async function restoreSession() {
         : 'Wachten tot de host het spel start...';
       document.getElementById('waitStartBtn').style.display = isHost ? 'block' : 'none';
       document.getElementById('hostJoinCard').style.display = isHost ? 'block' : 'none';
+      document.getElementById('hostCaptainRow').style.display = data.judge === 'captain' ? 'flex' : 'none';
       if (isHost) renderHostTeamPicker(teams);
       renderWaitPlayers(teams);
       showScreen('wait');
@@ -2651,6 +2741,7 @@ async function restoreSession() {
         ts:      tm * 60,
         tstart:  data.tstart || null,
         pending: data.pending || {},
+        captains: data.captains || [],
       };
       computeScores();
       document.getElementById('galov').classList.remove('show');
