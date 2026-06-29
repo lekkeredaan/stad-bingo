@@ -151,13 +151,13 @@
         <span class="settings-label">AI-rechter:</span>
         <select id="judgeSel" style="width:auto">
           <option value="off" selected>Uit</option>
-          <option value="host">Host keurt goed</option>
+          <option value="captain">Teamcaptains keuren elkaar</option>
           <option value="advisory">AI – adviserend (geeft cijfer + commentaar)</option>
           <option value="blocking">AI – streng (host bij twijfel)</option>
         </select>
       </div>
       <div style="font-size:11px;color:var(--muted);margin-top:6px;line-height:1.45">
-        <strong>Host keurt goed</strong>: elke claim gaat naar de host ter goedkeuring. <strong>AI – adviserend</strong>: De Rechter geeft cijfer + commentaar, claim telt altijd. <strong>AI – streng</strong>: De Rechter keurt goed/af; twijfelt hij, dan beslist de host.
+        <strong>Teamcaptains keuren elkaar</strong>: elk team wijst een captain aan; die keurt de claims van het volgende team goed (nooit van het eigen team). <strong>AI – adviserend</strong>: De Rechter geeft cijfer + commentaar, claim telt altijd. <strong>AI – streng</strong>: De Rechter keurt goed/af; twijfelt hij, dan beslist de host.
       </div>
     </div>
 
@@ -220,6 +220,9 @@
         <div class="lb-panel__label">Jouw naam &amp; team</div>
         <input type="text" id="hostName" class="lb-input" placeholder="Je naam" maxlength="20" style="margin-bottom:11px">
         <div id="hostTeamList"></div>
+        <label id="hostCaptainRow" style="display:none;align-items:center;gap:7px;margin-top:9px;font-size:13px;cursor:pointer">
+          <input type="checkbox" id="hostCaptain" style="width:auto">Ik wil captain zijn van dit team
+        </label>
         <div id="hostJoinErr" class="lb-status lb-status--warn" style="display:none"></div>
       </div>
 
@@ -252,6 +255,9 @@
       <div class="card">
         <div class="ct">Jouw naam</div>
         <input type="text" id="joinName" placeholder="Je naam" maxlength="20">
+        <label id="joinCaptainRow" style="display:none;align-items:center;gap:7px;margin-top:11px;font-size:13px;cursor:pointer">
+          <input type="checkbox" id="joinCaptain" style="width:auto">Ik wil captain zijn van dit team
+        </label>
         <button class="btn bp bfull" onclick="confirmJoin()" style="margin-top:12px">MEEDOEN →</button>
       </div>
     </div>

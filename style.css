@@ -494,6 +494,15 @@ input:focus, select:focus, textarea:focus {
 }
 .sb-name { flex: 1; font-weight: 600; font-size: 15px; }
 .sb-members { font-size: 11px; opacity: .65; margin-top: 2px; }
+.sb-captain {
+  display: flex; align-items: center; gap: 6px; margin-top: 5px;
+  font-size: 12px; cursor: pointer; opacity: .9;
+}
+.sb-captain input { width: auto; }
+.sb-captain-badge {
+  display: inline-block; margin-top: 5px; font-size: 11px; opacity: .7;
+}
+.sb-captain-badge.is-set { opacity: .9; font-weight: 600; }
 .sb-score {
   font-family: 'Orbitron', monospace;
   font-size: 22px; font-weight: 700;
