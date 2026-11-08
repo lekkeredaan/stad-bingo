@@ -689,7 +689,7 @@ async function fbPatch(code, data) {
 async function fbGet(code) {
   try {
     const r = await fetch(`${DB_URL}/games/${code}.json`);
-    return r.json();
+    return await r.json();
   } catch { return null; }
 }
 
@@ -697,7 +697,7 @@ async function fbGet(code) {
 async function fbGetPath(path) {
   try {
     const r = await fetch(`${DB_URL}/${path}.json`);
-    return r.json();
+    return await r.json();
   } catch { return null; }
 }
 
@@ -1433,17 +1433,27 @@ async function hostStartGame() {
   btn.disabled    = true;
 
   // Add host to chosen team, then set status to playing
-  const data  = await fbGet(gameCode);
-  const teams = (data?.teams || players.map(p => ({ ...p, members: [] }))).map((t, i) =>
-    i === teamIdx ? { ...t, members: [...(t.members || []), name] } : t
-  );
+  try {
+    const data  = await fbGet(gameCode);
+    const teams = (data?.teams || players.map(p => ({ ...p, members: [] }))).map((t, i) =>
+      i === teamIdx ? { ...t, members: [...(t.members || []), name] } : t
+    );
 
-  if (data?.judge === 'captain' && document.getElementById('hostCaptain').checked) {
-    const ok = await setCaptainClaim(teamIdx, true);
-    if (!ok) toast('Captain-rol van dit team is al ingenomen — je speelt wel mee, maar zonder die rol.');
+    if (data?.judge === 'captain' && document.getElementById('hostCaptain').checked) {
+      const ok = await setCaptainClaim(teamIdx, true);
+      if (!ok) toast('Captain-rol van dit team is al ingenomen — je speelt wel mee, maar zonder die rol.');
+    }
+
+    // fbPatchPath controleert res.ok en gooit bij een fout, zodat een mislukte start
+    // zichtbaar wordt (fbPatch negeert de status en zou de start stil laten mislukken).
+    await fbPatchPath(`games/${gameCode}`, { teams, status: 'playing', tstart: Date.now() });
+  } catch (e) {
+    btn.textContent     = 'SPEL STARTEN';
+    btn.disabled        = false;
+    errEl.textContent   = 'Spel starten mislukt — controleer je internetverbinding en probeer opnieuw.';
+    errEl.style.display = 'block';
+    return;
   }
-
-  await fbPatch(gameCode, { teams, status: 'playing', tstart: Date.now() });
 
   myTeamIdx       = teamIdx;
   saveSession();
