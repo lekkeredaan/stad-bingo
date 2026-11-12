@@ -7,7 +7,7 @@ const LOCAL_MODE = DB_URL.includes('YOUR-PROJECT');
 
 // ── Verzilvercodes & admin ──────────────────────────────────────────────────────
 // Masterscode werkt altijd (geen verzilvering/verloop) en ontgrendelt het adminpaneel.
-const MASTER_CODE  = 'LOCKOUT-MASTER-2026';
+// De code staat niet meer hier maar wordt op de server gecontroleerd (/api/check-master).
 const HOUR         = 60 * 60 * 1000;
 const VALIDITY_MS  = 72 * HOUR; // codes en lobby's zijn 72 uur geldig na verzilvering
 
@@ -556,7 +556,23 @@ async function submitRedeem() {
   if (!code) { showRedeemErr('Vul je code in.'); return; }
 
   // ── Masterscode: altijd geldig, ontgrendelt adminpaneel ──────────────────────
-  if (code === MASTER_CODE) {
+  // De server (ravotters.nl) controleert of dit de mastercode is.
+  btn.textContent = 'CONTROLEREN...';
+  btn.disabled    = true;
+  let master = { isMaster: false, tooMany: false };
+  try {
+    const r = await fetch('/api/check-master', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ code }),
+    });
+    if (r.ok) master = await r.json();
+  } catch { /* geen verbinding: ga door als gewone code */ }
+  btn.textContent = 'MAAK MIJN SPEL';
+  btn.disabled    = false;
+  if (master.tooMany) { showRedeemErr('Te veel foute pogingen. Wacht tien minuten en probeer het opnieuw.'); return; }
+
+  if (master.isMaster) {
     redeemCode = null;
     isAdmin    = true;
     document.getElementById('adminPanel').style.display = 'block';

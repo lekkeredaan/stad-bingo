@@ -65,7 +65,7 @@ firebase-admin).
 
 **Belangrijke constanten in `script.js`:**
 - `DB_URL` — Firebase database-URL
-- `MASTER_CODE` = `LOCKOUT-MASTER-2026` — admin/masterscode (verander dit bij overdracht!)
+- Mastercode: wordt gecontroleerd op ravotters.nl (`/api/master/check`, Vercel-env `MASTER_SECRET` op project `uitgespeeld`); staat niet meer in deze code.
 - `CLOUD_NAME` / `UPLOAD_PRESET` — Cloudinary
 - `VALIDITY_MS` = 72 uur — geldigheid van codes/lobby's
 - `MUSIC` — lijst aftermovie-tracks
@@ -113,7 +113,7 @@ naartoe. DNS bij TransIP: A-record `@` → `76.76.21.21` per domein.
 - **`api/upload.js` is dood** sinds uploads direct naar Cloudinary gaan — mag verwijderd
   (en de regel in `vercel.json`). De `CLOUDINARY_API_KEY/SECRET` env-vars zijn dan ook niet
   meer nodig.
-- **Verander `MASTER_CODE`** in `script.js` bij overdracht (staat in de client-broncode).
+- Mastercode wijzigen: env `MASTER_SECRET` op het Vercel-project `uitgespeeld` (ravotters.nl).
 - **Kosten:** Claude-rechter ≈ ~$0,01 per beoordeelde foto; Cloudinary-video kost opslag/
   bandbreedte. Firebase/Vercel/Cloudinary draaien op gratis tiers (Vercel Hobby is formeel
   niet-commercieel → overweeg Pro).
