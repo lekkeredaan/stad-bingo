@@ -555,109 +555,102 @@ async function submitRedeem() {
 
   if (!code) { showRedeemErr('Vul je code in.'); return; }
 
-  // ── Masterscode: altijd geldig, ontgrendelt adminpaneel ──────────────────────
-  // De server (ravotters.nl) controleert of dit de mastercode is.
+  // De server controleert alles: eigen codes, webshopcodes en de mastercode.
   btn.textContent = 'CONTROLEREN...';
   btn.disabled    = true;
-  let master = { isMaster: false, tooMany: false };
+  let res = null;
   try {
-    const r = await fetch('/api/check-master', {
+    const r = await fetch('/api/redeem', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ code }),
+      body: JSON.stringify({ action: 'redeem', code }),
     });
-    if (r.ok) master = await r.json();
-  } catch { /* geen verbinding: ga door als gewone code */ }
+    res = await r.json();
+  } catch { res = null; }
   btn.textContent = 'MAAK MIJN SPEL';
   btn.disabled    = false;
-  if (master.tooMany) { showRedeemErr('Te veel foute pogingen. Wacht tien minuten en probeer het opnieuw.'); return; }
 
-  if (master.isMaster) {
-    redeemCode = null;
-    isAdmin    = true;
+  if (!res)                        { showRedeemErr('Verbinding mislukt. Probeer opnieuw.'); return; }
+  if (res.reason === 'too_many')   { showRedeemErr('Te veel foute pogingen. Wacht tien minuten en probeer het opnieuw.'); return; }
+  if (res.reason === 'expired')    { showRedeemErr('Deze code is verlopen (72 uur na verzilvering verstreken).'); return; }
+  if (res.reason === 'offline')    { showRedeemErr('De code kon niet gecontroleerd worden. Probeer het zo opnieuw.'); return; }
+  if (!res.ok)                     { showRedeemErr('Code niet gevonden. Controleer je code.'); return; }
+
+  // ── Masterscode: altijd geldig, ontgrendelt adminpaneel ──────────────────────
+  if (res.isMaster) {
+    redeemCode  = null;
+    isAdmin     = true;
+    adminMaster = code;
     document.getElementById('adminPanel').style.display = 'block';
     renderAdminCodes();
     showSetup();
     return;
   }
 
-  btn.textContent = 'CONTROLEREN...';
-  btn.disabled    = true;
-  const entry = await fbGetPath(`redeemCodes/${code}`);
-  btn.textContent = 'MAAK MIJN SPEL';
-  btn.disabled    = false;
-
-  if (!entry) { showRedeemErr('Code niet gevonden. Controleer je code.'); return; }
-
   const now = Date.now();
-
-  if (entry.status === 'redeemed') {
-    if (entry.expiresAt && entry.expiresAt < now) {
-      showRedeemErr('Deze code is verlopen (72 uur na verzilvering verstreken).');
-      return;
-    }
-    // Code is al verzilverd en nog geldig — terug naar de bijbehorende lobby als host
-    if (entry.gameCode) {
-      const game = await fbGet(entry.gameCode);
-      if (game && game.status !== 'over' && (!game.expiresAt || game.expiresAt > now)) {
-        gameCode   = entry.gameCode;
-        isHost     = true;
-        redeemCode = code;
-        if (game.status === 'lobby') {
-          document.getElementById('waitCode').textContent       = gameCode;
-          document.getElementById('waitSub').textContent        = 'Deel deze code met andere spelers';
-          document.getElementById('waitStartBtn').style.display = 'block';
-          document.getElementById('hostJoinCard').style.display = myTeamIdx < 0 ? 'block' : 'none';
-          renderHostTeamPicker(game.teams);
-          renderWaitPlayers(game.teams);
-          saveSession();
-          showScreen('wait');
-          fbListen(gameCode, onGameData);
-          return;
-        }
+  // Code was al verzilverd en is nog geldig — terug naar de bijbehorende lobby als host
+  if (res.gameCode) {
+    const game = await fbGet(res.gameCode);
+    if (game && game.status !== 'over' && (!game.expiresAt || game.expiresAt > now)) {
+      gameCode   = res.gameCode;
+      isHost     = true;
+      redeemCode = code;
+      if (game.status === 'lobby') {
+        document.getElementById('waitCode').textContent       = gameCode;
+        document.getElementById('waitSub').textContent        = 'Deel deze code met andere spelers';
+        document.getElementById('waitStartBtn').style.display = 'block';
+        document.getElementById('hostJoinCard').style.display = myTeamIdx < 0 ? 'block' : 'none';
+        renderHostTeamPicker(game.teams);
+        renderWaitPlayers(game.teams);
+        saveSession();
+        showScreen('wait');
+        fbListen(gameCode, onGameData);
+        return;
       }
     }
-    // Nog geen (geldig) spel aangemaakt met deze code — door naar setup binnen het verloopvenster
-    redeemCode = code;
-    showSetup();
-    return;
   }
 
-  // ── Code is nog ongebruikt: verzilver nu, start de 72-uurs klok ──────────────
-  try {
-    await fbPatchPath(`redeemCodes/${code}`, { status: 'redeemed', redeemedAt: now, expiresAt: now + VALIDITY_MS, gameCode: null });
-  } catch {
-    showRedeemErr('Verbinding mislukt. Probeer opnieuw.');
-    return;
-  }
-
+  // Nieuw ingewisseld of nog geen (geldig) spel aangemaakt — door naar setup
   redeemCode = code;
   showSetup();
 }
 
 // ── Adminpaneel (alleen na masterscode) ──────────────────────────────────────────
 
+let adminMaster = null; // alleen in het geheugen van deze pagina
+
+async function adminCall(action) {
+  try {
+    const r = await fetch('/api/redeem', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action, master: adminMaster }),
+    });
+    return await r.json();
+  } catch { return null; }
+}
+
 async function adminGenerateCodes() {
-  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
-  const codes = Array.from({ length: 10 }, () =>
-    'LB-' + Array.from({ length: 8 }, () => chars[Math.floor(Math.random() * chars.length)]).join('')
-  );
-  for (const c of codes) {
-    await fbSetPath(`redeemCodes/${c}`, { status: 'unused', redeemedAt: null, expiresAt: null, gameCode: null });
-  }
-  await renderAdminCodes();
+  const res = await adminCall('admin-generate');
+  showAdminCodes(res);
 }
 
 async function renderAdminCodes() {
-  const all  = (await fbGetPath('redeemCodes')) || {};
-  const rows = Object.entries(all).sort((a, b) => b[0].localeCompare(a[0]));
-  document.getElementById('adminCodeList').innerHTML = rows.length
-    ? rows.map(([code, d]) => {
+  document.getElementById('adminCodeList').innerHTML = '<div style="color:var(--muted);font-size:12px">Codes laden…</div>';
+  showAdminCodes(await adminCall('admin-list'));
+}
+
+function showAdminCodes(res) {
+  const el = document.getElementById('adminCodeList');
+  if (!res || !res.ok) { el.innerHTML = '<div style="color:#e07070;font-size:12px">Codes konden niet geladen worden.</div>'; return; }
+  const rows = res.codes || [];
+  el.innerHTML = rows.length
+    ? rows.map(d => {
         const expired = d.status === 'redeemed' && d.expiresAt && d.expiresAt < Date.now();
         const status  = d.status === 'redeemed' ? (expired ? 'verlopen' : 'actief (72u)') : 'ongebruikt';
         const color   = d.status === 'redeemed' ? (expired ? '#e07070' : '#4a9970') : 'var(--muted)';
         return `<div style="display:flex;justify-content:space-between;gap:8px;padding:5px 0;border-bottom:1px solid var(--bdr);font-size:12px">
-                  <span style="font-family:'Orbitron',monospace">${code}</span>
+                  <span style="font-family:'Orbitron',monospace">${d.code}</span>
                   <span style="color:${color}">${status}</span>
                 </div>`;
       }).join('')
@@ -1278,7 +1271,7 @@ async function finalizeGameCreation(cells, mode, sz, tm, judgeMode) {
       expiresAt,
       redemptionCode: redeemCode || null,
     });
-    if (redeemCode) await fbPatchPath(`redeemCodes/${redeemCode}`, { gameCode });
+    if (redeemCode) await fetch('/api/redeem', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'link', code: redeemCode, gameCode }) }).catch(() => {});
   } catch (e) {
     btn.innerHTML = btnOrig;
     btn.disabled  = false;
