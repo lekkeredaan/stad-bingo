@@ -870,3 +870,6 @@ body { background: linear-gradient(180deg, var(--lb-bg-1), var(--lb-bg-2) 40%); 
 .lb-leave { display: flex; align-items: center; justify-content: center; gap: 9px; padding: 14px; border-radius: 18px; width: 100%; background: #fff; border: 2px solid var(--lb-line); box-shadow: 0 4px 12px rgba(150,90,30,.07); cursor: pointer; font-family: 'Fredoka', sans-serif; font-weight: 500; font-size: 16px; color: var(--lb-muted); }
 .lb-leave:active { transform: scale(.98); }
 .lb-leave svg { width: 17px; height: 17px; fill: none; stroke: var(--lb-muted); stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+
+/* Lange namen (ook zonder spaties) breken af in plaats van uit hun vak te lopen */
+.lb-lobbyteam__sub, .lb-lobbyteam__name, .sb-members, .sb-name, .pe .pn, .lb-pick__name, .lb-team__name, .gl { overflow-wrap: anywhere; min-width: 0; }

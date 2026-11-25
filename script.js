@@ -492,6 +492,18 @@ const deviceId = (() => {
   return id;
 })();
 
+// ── Tekst veilig in HTML zetten ──────────────────────────────────────────────
+// Namen, teamnamen, opdrachten en foto-adressen komen uit de database en kunnen
+// door iedereen met de lobbycode worden aangepast. Altijd via esc() in innerHTML,
+// anders voert een naam als <img onerror=...> code uit op andermans telefoon.
+function esc(v) {
+  return String(v ?? '').replace(/[&<>"']/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch]));
+}
+// Alleen gewone http(s)-adressen als foto/video; al het andere wordt leeg.
+function safeUrl(u) {
+  return /^https?:\/\//i.test(String(u || '')) ? esc(u) : '';
+}
+
 // ── Scherm navigatie ──────────────────────────────────────────────────────────
 
 function showScreen(id) {
@@ -650,7 +662,7 @@ function showAdminCodes(res) {
         const status  = d.status === 'redeemed' ? (expired ? 'verlopen' : 'actief (72u)') : 'ongebruikt';
         const color   = d.status === 'redeemed' ? (expired ? '#e07070' : '#4a9970') : 'var(--muted)';
         return `<div style="display:flex;justify-content:space-between;gap:8px;padding:5px 0;border-bottom:1px solid var(--bdr);font-size:12px">
-                  <span style="font-family:'Orbitron',monospace">${d.code}</span>
+                  <span style="font-family:'Orbitron',monospace">${esc(d.code)}</span>
                   <span style="color:${color}">${status}</span>
                 </div>`;
       }).join('')
@@ -821,10 +833,33 @@ function fbListen(code, cb) {
 
   gameStream.addEventListener('put',   e => handle(e, false));
   gameStream.addEventListener('patch', e => handle(e, true));
-  gameStream.onerror = () => {};
+  listenCode = code;
+  listenCb   = cb;
+  const me = gameStream;
+  // Na een netwerkstoring geeft de browser de verbinding soms helemaal op
+  // (readyState CLOSED). Dan zelf opnieuw verbinden, anders loopt het bord niet meer bij.
+  gameStream.onerror = () => {
+    if (me.readyState !== EventSource.CLOSED) return;
+    clearTimeout(relistenTimer);
+    relistenTimer = setTimeout(() => { if (gameStream === me && listenCode) fbListen(listenCode, listenCb); }, 3000);
+  };
 }
 
+let listenCode = null, listenCb = null, relistenTimer = null;
+
+// Netwerk terug of telefoon weer uit de zak: stand meteen opnieuw ophalen.
+async function resyncNow() {
+  if (!listenCode || !gameStream) return;
+  if (gameStream.readyState === EventSource.CLOSED) { fbListen(listenCode, listenCb); return; }
+  const full = await fbGet(listenCode);
+  if (full && listenCb) { try { listenCb(full); } catch {} }
+}
+window.addEventListener('online', resyncNow);
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') resyncNow(); });
+
 function stopListening() {
+  clearTimeout(relistenTimer);
+  listenCode = null;
   if (gameStream) { gameStream.close(); gameStream = null; }
 }
 
@@ -908,7 +943,7 @@ function renderPlayers() {
   document.getElementById('plist').innerHTML = players.map((p, i) =>
     `<div class="pr" style="border-color:${COLS[p.color].m}33">
        <div class="cd" style="background:${COLS[p.color].m}"></div>
-       <input type="text" value="${p.name}" onchange="players[${i}].name=this.value" style="flex:1;width:auto">
+       <input type="text" value="${esc(p.name)}" onchange="players[${i}].name=this.value" style="flex:1;width:auto">
        <select onchange="players[${i}].color=+this.value" style="width:auto">
          ${COLS.map((c, ci) =>
            `<option value="${ci}"${ci === p.color ? ' selected' : ''}>${['Blauw','Rood','Groen','Geel','Paars','Roze'][ci]}</option>`
@@ -1137,7 +1172,7 @@ function renderPreview() {
       rows.push(`<div class="pv-row">
                    <span class="pv-num">${pos}</span>
                    <svg class="pv-ic" viewBox="0 0 24 24"><use href="#${tt.icon}"/></svg>
-                   <span class="pv-txt">${item.text}</span>
+                   <span class="pv-txt">${esc(item.text)}</span>
                    <span class="pv-diff ${dCls}">${dLbl}</span>
                    <button class="pv-reroll" onclick="rerollCell(${cellIdx})" ${pv.spare.length === 0 ? 'disabled' : ''} title="Herroll deze opdracht">
                      <svg viewBox="0 0 24 24"><use href="#lb-dice"/></svg>
@@ -1269,7 +1304,9 @@ async function finalizeGameCreation(cells, mode, sz, tm, judgeMode) {
       winner:    -1,
       winReason: '',
       expiresAt,
-      redemptionCode: redeemCode || null,
+      // De toegangscode niet in de lobby zetten: die is voor iedereen met de lobbycode leesbaar.
+      // De koppeling code → lobby staat al op de server (/api/redeem 'link').
+      redemptionCode: null,
     });
     if (redeemCode) await fetch('/api/redeem', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'link', code: redeemCode, gameCode }) }).catch(() => {});
   } catch (e) {
@@ -1301,7 +1338,7 @@ async function searchGame() {
   const code = document.getElementById('joinCode').value.toUpperCase().replace(/[^A-Z0-9]/g, '');
   document.getElementById('joinErr').style.display = 'none';
 
-  if (code.length !== 6) { showJoinErr('Voer een geldige 6-cijferige code in'); return; }
+  if (code.length !== 6) { showJoinErr('De code heeft 6 letters of cijfers, bijvoorbeeld ABC123'); return; }
 
   document.getElementById('joinSearchBtn').textContent = 'ZOEKEN...';
   const data = await fbGet(code);
@@ -1329,8 +1366,8 @@ function renderJoinTeams(teams) {
                onclick="selectJoinTeam(this,${i})">
               <span class="lb-pick__dot" style="background:${c.l};box-shadow:0 0 0 3px ${c.m}55"></span>
               <span style="flex:1;min-width:0;text-align:left">
-                <span class="lb-pick__name" style="color:${c.l};display:block">${t.name}</span>
-                <span style="font-family:'Nunito',sans-serif;font-size:11px;color:${c.l};opacity:.8">${members}</span>
+                <span class="lb-pick__name" style="color:${c.l};display:block">${esc(t.name)}</span>
+                <span style="font-family:'Nunito',sans-serif;font-size:11px;color:${c.l};opacity:.8">${esc(members)}</span>
               </span>
               <span class="lb-pick__check"><svg viewBox="0 0 24 24"><use href="#lb-seal"/></svg></span>
             </button>`;
@@ -1343,6 +1380,34 @@ function selectJoinTeam(el, i) {
   document.getElementById('joinTeamList').dataset.sel = i;
 }
 
+// Voegt één naam toe aan een team zonder de namen van anderen te wissen.
+// Firebase schrijft alleen als de lijst sinds het lezen niet is veranderd (ETag);
+// doet iemand op hetzelfde moment mee, dan lezen we opnieuw en proberen het nog eens.
+// Geeft de nieuwe teams terug, of null bij een verbindingsfout.
+async function addMember(code, teamIdx, name) {
+  const url = `${DB_URL}/games/${code}/teams/${teamIdx}/members.json`;
+  for (let tries = 0; tries < 6; tries++) {
+    try {
+      const r = await fetch(url, { headers: { 'X-Firebase-ETag': 'true' } });
+      const etag = r.headers.get('ETag');
+      const cur = await r.json();
+      const list = Array.isArray(cur) ? cur.filter(n => n != null) : [];
+      const put = await fetch(url, {
+        method: 'PUT',
+        headers: etag ? { 'Content-Type': 'application/json', 'if-match': etag } : { 'Content-Type': 'application/json' },
+        body: JSON.stringify([...list, name]),
+      });
+      if (put.ok) break;
+      if (put.status !== 412) return null;
+    } catch { return null; }
+    await new Promise(res => setTimeout(res, 150 + Math.random() * 250));
+  }
+  const fresh = await fbGet(code);
+  return fresh && Array.isArray(fresh.teams) ? fresh.teams : null;
+}
+
+let joinBusy = false;
+
 async function confirmJoin() {
   const name    = document.getElementById('joinName').value.trim();
   const selRaw  = document.getElementById('joinTeamList').dataset.sel;
@@ -1351,13 +1416,19 @@ async function confirmJoin() {
   if (!name)       { showJoinErr('Vul je naam in'); return; }
   if (teamIdx < 0) { showJoinErr('Kies een team'); return; }
 
-  const data = await fbGet(gameCode);
-  if (!data) { showJoinErr('Verbindingsfout. Probeer opnieuw.'); return; }
-
-  const teams = data.teams.map((t, i) =>
-    i === teamIdx ? { ...t, members: [...(t.members || []), name] } : t
-  );
-  await fbPatch(gameCode, { teams });
+  if (joinBusy) return;            // dubbel tikken: maar één keer meedoen
+  joinBusy = true;
+  const joinBtn = document.querySelector('[onclick="confirmJoin()"]');
+  joinBtn.disabled = true;
+  let data = null, teams = null;
+  try {
+    data = await fbGet(gameCode);
+    if (data && Array.isArray(data.teams)) teams = await addMember(gameCode, teamIdx, name);
+  } finally {
+    joinBusy = false;
+    joinBtn.disabled = false;
+  }
+  if (!data || !teams) { showJoinErr('Verbindingsfout. Probeer opnieuw.'); return; }
 
   if (data.judge === 'captain' && document.getElementById('joinCaptain').checked) {
     const ok = await setCaptainClaim(teamIdx, true);
@@ -1380,6 +1451,8 @@ function showJoinErr(msg) {
   const el = document.getElementById('joinErr');
   el.textContent   = msg;
   el.style.display = 'block';
+  // Op een klein scherm staat de melding soms boven buiten beeld
+  try { el.scrollIntoView({ block: 'center', behavior: 'smooth' }); } catch {}
 }
 
 // ── Wait scherm (lobby) ───────────────────────────────────────────────────────
@@ -1394,7 +1467,7 @@ function renderHostTeamPicker(teams) {
                style="background:linear-gradient(150deg,${c.m},${c.b});--glow:${c.m}44"
                onclick="selectHostTeam(this,${i})">
               <span class="lb-pick__dot" style="background:${c.l};box-shadow:0 0 0 3px ${c.m}55"></span>
-              <span class="lb-pick__name" style="color:${c.l}">${t.name}</span>
+              <span class="lb-pick__name" style="color:${c.l}">${esc(t.name)}</span>
               <span class="lb-pick__check"><svg viewBox="0 0 24 24"><use href="#lb-seal"/></svg></span>
             </button>`;
   }).join('');
@@ -1412,7 +1485,7 @@ function renderWaitPlayers(teams) {
     const members = (t.members || []).join(', ') || 'Nog niemand gejoint';
     return `<div class="lb-lobbyteam" style="--tc:${c.m}40;--tbg:${c.m}12;--glow:${c.m}55">
               <span class="lb-lobbyteam__badge" style="background:${c.m}"><svg viewBox="0 0 24 24"><use href="#lb-user"/></svg></span>
-              <span><span class="lb-lobbyteam__name">${t.name}</span><span class="lb-lobbyteam__sub">${members}</span></span>
+              <span><span class="lb-lobbyteam__name">${esc(t.name)}</span><span class="lb-lobbyteam__sub">${esc(members)}</span></span>
             </div>`;
   }).join('');
 }
@@ -1444,9 +1517,12 @@ async function hostStartGame() {
   // Add host to chosen team, then set status to playing
   try {
     const data  = await fbGet(gameCode);
-    const teams = (data?.teams || players.map(p => ({ ...p, members: [] }))).map((t, i) =>
-      i === teamIdx ? { ...t, members: [...(t.members || []), name] } : t
-    );
+    if (!data || !Array.isArray(data.teams)) throw new Error('lobby niet leesbaar');
+    // Host erbij zetten zonder de rest van de teamlijst te overschrijven (iemand kan net
+    // tegelijk meedoen). Staat de naam er al (opnieuw op Start na een fout), dan niet nog eens.
+    if (!(data.teams[teamIdx]?.members || []).includes(name)) {
+      if (!(await addMember(gameCode, teamIdx, name))) throw new Error('meedoen mislukt');
+    }
 
     if (data?.judge === 'captain' && document.getElementById('hostCaptain').checked) {
       const ok = await setCaptainClaim(teamIdx, true);
@@ -1455,7 +1531,7 @@ async function hostStartGame() {
 
     // fbPatchPath controleert res.ok en gooit bij een fout, zodat een mislukte start
     // zichtbaar wordt (fbPatch negeert de status en zou de start stil laten mislukken).
-    await fbPatchPath(`games/${gameCode}`, { teams, status: 'playing', tstart: Date.now() });
+    await fbPatchPath(`games/${gameCode}`, { status: 'playing', tstart: Date.now() });
   } catch (e) {
     btn.textContent     = 'SPEL STARTEN';
     btn.disabled        = false;
@@ -1479,6 +1555,8 @@ function leaveWait() {
 
 function onGameData(data) {
   if (!data) return;
+  // Kapotte of half geschreven lobby: negeren in plaats van stil vastlopen.
+  if (!Array.isArray(data.teams) || ((data.status === 'playing' || data.status === 'over') && !Array.isArray(data.cells))) return;
   const screen = document.querySelector('.screen.active')?.id;
 
   if (data.status === 'lobby') {
@@ -1656,11 +1734,14 @@ function renderGame() {
     `<span class="lb-mname">${m.name}</span>`;
 
   if (gs.tm > 0) document.getElementById('tbar').style.display = 'flex';
+  // Alleen de host kan het spel voor iedereen stoppen (een misser naast "Film" mag het potje niet beëindigen).
+  const stopBtn = document.querySelector('.lb-btn--stop');
+  if (stopBtn) stopBtn.style.display = isHost || !gameCode ? '' : 'none';
 
   document.getElementById('pchips').innerHTML = gs.players.map(p => {
     const c = COLS[p.color];
     return `<div class="lb-team" style="background:${c.b};color:${c.l};box-shadow:0 5px 13px ${c.m}55">
-              <span class="lb-team__name">${p.name}</span>
+              <span class="lb-team__name">${esc(p.name)}</span>
               <span class="lb-team__count" style="color:${c.l}">${p.score}</span>
             </div>`;
   }).join('');
@@ -1701,13 +1782,13 @@ function renderGame() {
       const c        = COLS[p.color];
       const showOwner = cp >= 54;
       const cfs      = cellFontSize(showOwner ? cp - 12 : cp, cell.text.length);
-      const owner    = showOwner ? `<span class="lb-tile__owner" style="color:${c.l}">${(p.name || '').substring(0, 9)}</span>` : '';
+      const owner    = showOwner ? `<span class="lb-tile__owner" style="color:${c.l}">${esc(String(p.name || '').substring(0, 9))}</span>` : '';
       const photoBadge = cell.photo ? `<span class="lb-tile__pb" style="color:#fff">${BTN.camSm}</span>` : '';
       return `<div class="lb-tile ${tt.cls} is-claimed${cell.wc ? ' wc' : ''}"
                  style="width:${cp}px;height:${cp}px;background:${c.b};--glow:${c.m}66"
                  onclick="clickCell(${i})">
                 ${photoBadge}
-                <span class="lb-tile__text" style="font-size:${cfs}px;color:${c.l}">${cell.text}</span>
+                <span class="lb-tile__text" style="font-size:${cfs}px;color:${c.l}">${esc(cell.text)}</span>
                 ${owner}
                 <span class="lb-seal"><svg viewBox="0 0 24 24"><use href="#lb-seal"/></svg></span>
               </div>`;
@@ -1722,7 +1803,7 @@ function renderGame() {
     return `<div class="lb-tile ${tt.cls}${isPending ? ' is-pending' : ''}" style="width:${cp}px;height:${cp}px" onclick="clickCell(${i})">
               ${pendingTag}
               ${ic}
-              <span class="lb-tile__text" style="font-size:${fs}px">${cell.text}</span>
+              <span class="lb-tile__text" style="font-size:${fs}px">${esc(cell.text)}</span>
             </div>`;
   }).join('');
 
@@ -1763,7 +1844,7 @@ function clickCell(i) {
         const c = COLS[p.color];
         return `<button class="btn team-sel-btn" data-idx="${idx}"
                    style="background:${c.b};border:2px solid ${c.m};color:${c.l};padding:7px 16px;font-family:'DM Sans',sans-serif;font-size:13px;font-weight:600;letter-spacing:0"
-                   onclick="selectClaimTeam(${idx})">${p.name}</button>`;
+                   onclick="selectClaimTeam(${idx})">${esc(p.name)}</button>`;
       }).join('') +
       `</div>`;
   }
@@ -2066,15 +2147,15 @@ function renderReview() {
     const c      = player ? COLS[player.color] : { b: '#eee', l: '#333' };
     const media  = p.photo
       ? (p.mtype === 'video'
-          ? `<video src="${p.photo}" controls playsinline preload="metadata"></video>`
-          : `<img src="${p.photo}" alt="bewijsfoto">`)
+          ? `<video src="${safeUrl(p.photo)}" controls playsinline preload="metadata"></video>`
+          : `<img src="${safeUrl(p.photo)}" alt="bewijsfoto">`)
       : '';
     const verdictHtml = p.verdict
-      ? `<div class="rv-verdict">★ ${p.verdict.score}/10${p.verdict.uncertain ? ' — De Rechter twijfelt' : ''} — ${(p.verdict.comment || '').replace(/</g,'&lt;')}</div>`
+      ? `<div class="rv-verdict">★ ${esc(p.verdict.score)}/10${p.verdict.uncertain ? ' — De Rechter twijfelt' : ''} — ${(p.verdict.comment || '').replace(/</g,'&lt;')}</div>`
       : '';
     return `<div class="rv-row">
-              <div class="rv-task">${cellTx}</div>
-              <span class="rv-team" style="background:${c.b};color:${c.l}">${player ? player.name : ''}</span>
+              <div class="rv-task">${esc(cellTx)}</div>
+              <span class="rv-team" style="background:${c.b};color:${c.l}">${player ? esc(player.name) : ''}</span>
               <div class="rv-media">${media}</div>
               ${verdictHtml}
               <div class="rv-actions">
@@ -2162,7 +2243,7 @@ function showWinner(pi, reason, isBingo) {
   document.getElementById('pod').innerHTML = sorted.map(pl =>
     `<div class="pe">
        <div class="ps" style="color:${COLS[pl.color].m}">${pl.score}</div>
-       <div class="pn">${pl.name}</div>
+       <div class="pn">${esc(pl.name)}</div>
      </div>`
   ).join('');
   document.getElementById('sov').classList.remove('show');
@@ -2179,7 +2260,7 @@ function showTie(msg, isBingo) {
   document.getElementById('pod').innerHTML = sorted.map(pl =>
     `<div class="pe">
        <div class="ps" style="color:${COLS[pl.color].m}">${pl.score}</div>
-       <div class="pn">${pl.name}</div>
+       <div class="pn">${esc(pl.name)}</div>
      </div>`
   ).join('');
   document.getElementById('sov').classList.remove('show');
@@ -2224,8 +2305,8 @@ function renderScoreboard() {
     return `<div class="sb-row" style="background:${c.b};border-color:${c.m}55">
               <div class="sb-rank">${medal}</div>
               <div style="flex:1;min-width:0">
-                <div class="sb-name" style="color:${c.l}">${p.name}</div>
-                ${members ? `<div class="sb-members">${members}</div>` : ''}
+                <div class="sb-name" style="color:${c.l}">${esc(p.name)}</div>
+                ${members ? `<div class="sb-members">${esc(members)}</div>` : ''}
                 ${captainHtml}
               </div>
               <div class="sb-score" style="color:${c.m}">${p.score}</div>
@@ -2271,11 +2352,11 @@ function renderGallery() {
   grid.innerHTML = shots.map(p =>
     `<div class="gi">
        ${p.mtype === 'video'
-         ? `<video src="${p.photo}" controls playsinline preload="metadata" style="width:100%;height:76px;object-fit:cover;display:block;background:#000"></video>`
-         : `<img src="${p.photo}" alt="foto" loading="lazy">`}
-       <div class="gl" style="color:${p.color}">${p.player}</div>
-       <div class="gl">${p.task.substring(0, 38)}</div>
-       ${p.verdict ? `<div class="gl" style="color:var(--acc)">★ ${p.verdict.score}/10 — ${(p.verdict.comment || '').substring(0, 60)}</div>` : ''}
+         ? `<video src="${safeUrl(p.photo)}" controls playsinline preload="metadata" style="width:100%;height:76px;object-fit:cover;display:block;background:#000"></video>`
+         : `<img src="${safeUrl(p.photo)}" alt="foto" loading="lazy">`}
+       <div class="gl" style="color:${p.color}">${esc(p.player)}</div>
+       <div class="gl">${esc(String(p.task).substring(0, 38))}</div>
+       ${p.verdict ? `<div class="gl" style="color:var(--acc)">★ ${esc(p.verdict.score)}/10 — ${esc(String(p.verdict.comment || '').substring(0, 60))}</div>` : ''}
      </div>`
   ).join('');
 }
@@ -2722,7 +2803,9 @@ async function restoreSession() {
     if (!saved?.gameCode) return false;
 
     const data = await fbGet(saved.gameCode);
-    if (!data || data.status === 'over') { clearSession(); return false; }
+    if (!data) { clearSession(); return false; }
+    // Kapotte lobby: de sessie niet wissen, de speler kan het later opnieuw proberen.
+    if (!Array.isArray(data.teams) || (data.status !== 'lobby' && !Array.isArray(data.cells))) return 'broken';
     if (data.expiresAt && data.expiresAt < Date.now()) { clearSession(); return false; }
 
     gameCode  = saved.gameCode;
@@ -2745,7 +2828,8 @@ async function restoreSession() {
       return true;
     }
 
-    if (data.status === 'playing') {
+    if (data.status === 'playing' || data.status === 'over') {
+      const isOver = data.status === 'over';
       photos = {};
       const tm = data.tm || 0;
       gs = {
@@ -2755,7 +2839,7 @@ async function restoreSession() {
         cells:   data.cells.map(c => ({ ...c, photo: c.photo || null })),
         players: data.teams,
         turn:    data.turn,
-        over:    false,
+        over:    isOver,
         tm,
         ts:      tm * 60,
         tstart:  data.tstart || null,
@@ -2765,8 +2849,14 @@ async function restoreSession() {
       computeScores();
       document.getElementById('galov').classList.remove('show');
       showScreen('game');
-      if (tm > 0 && gs.tstart) startTimer();
       renderGame();
+      // Na afloop herladen: uitslag, foto's en film blijven bereikbaar ("Nieuw spel" wist de sessie).
+      if (isOver) {
+        if (data.winner >= 0 && gs.players[data.winner]) showWinner(data.winner, data.winReason || '', data.winIsBingo);
+        else showTie(data.winReason || '', data.winIsBingo);
+        return true;
+      }
+      if (tm > 0 && gs.tstart) startTimer();
       fbListen(gameCode, onGameData);
       return true;
     }
@@ -2780,6 +2870,12 @@ async function restoreSession() {
 async function init() {
   if (LOCAL_MODE) { showHome(); return; }
   const restored = await restoreSession();
+  if (restored === 'broken') {
+    // Startscherm tonen zonder de sessie te wissen: na herstel brengt herladen je terug.
+    showScreen('home');
+    toast('Je spel kon nu niet geladen worden. Herlaad de pagina zo nog eens.');
+    return;
+  }
   if (!restored) showHome();
 }
 init();
